@@ -2264,7 +2264,9 @@ function linkCard(name, cb, type){
   const cs = getComputedStyle(document.documentElement);
   const c1 = cs.getPropertyValue('--bg1').trim() || '#1f4a3a', c2 = cs.getPropertyValue('--bg2').trim() || '#2f6b4f';
   const gold = META.doorBorderColor || '#f2c869';
+  const textOn = !META.cardImg || META.cardText !== false;
   const finish = ()=>{
+    if(!textOn){ cb(type ? cv.toDataURL(type, .86) : cv.toDataURL('image/png')); return; }
     x.fillStyle = 'rgba(0,0,0,.38)'; x.fillRect(0, 0, W, H);
     x.strokeStyle = META.doorBorderColor || '#e8b95c'; x.lineWidth = 10; x.strokeRect(24, 24, W-48, H-48);
     x.textAlign = 'center'; x.textBaseline = 'middle';
@@ -2280,10 +2282,11 @@ function linkCard(name, cb, type){
   };
   const g = x.createLinearGradient(0, 0, 0, H); g.addColorStop(0, c1); g.addColorStop(1, c2);
   x.fillStyle = g; x.fillRect(0, 0, W, H);
-  if(META.bgImage){
+  const bgSrc = META.cardImg || META.bgImage;
+  if(bgSrc){
     const im = new Image();
     im.onload = ()=>{ const s = Math.max(W/im.width, H/im.height); x.drawImage(im, (W - im.width*s)/2, (H - im.height*s)/2, im.width*s, im.height*s); finish(); };
-    im.onerror = finish; im.src = META.bgImage;
+    im.onerror = finish; im.src = bgSrc;
   } else finish();
 }
 function copyText(text, btn){
@@ -2359,6 +2362,10 @@ function drawPeopleLinks(){
   const box = document.getElementById('m_links'); if(!box) return;
   const names = document.getElementById('m_people').value.split('\n').map(s=>s.trim()).filter(Boolean);
   const base = document.getElementById('m_linkBase').value.trim();
+  const warn = document.getElementById('m_baseWarn'), gm = base.match(/github\.com\/([^\/\s]+)\/([^\/#?\s]+)/i);
+  if(warn){ warn.hidden = !gm; if(gm){ const fix = `https://${gm[1].toLowerCase()}.github.io/${gm[2].replace(/\.git$/,'')}/`;
+    warn.innerHTML = `⚠️ Das ist die Adresse des GitHub-Ordners. Für die Empfänger ist es wahrscheinlich: <b>${esc(fix)}</b> <button type="button" class="pill awDel" id="m_baseFix">Übernehmen</button>`;
+    document.getElementById('m_baseFix').onclick = ()=>{ document.getElementById('m_linkBase').value = fix; drawPeopleLinks(); }; } }
   if(!names.length){ box.innerHTML = ''; return; }
   if(!base){ box.innerHTML = '<p class="hint">Trage oben die Adresse des Kalenders ein, dann erscheinen hier die Links.</p>'; return; }
   const slugs = waSlugs(names);
@@ -3560,6 +3567,12 @@ function openSettingsForm(){
       <label for="m_linkBase">Adresse des Kalenders</label>
       <input type="text" id="m_linkBase" value="${esc(linkBaseDefault())}" placeholder="z. B. https://deinname.github.io/kalender/">
       <p class="hint">ⓘ Die Adresse, unter der die Empfänger den Kalender öffnen: die GitHub-Pages-Adresse (ohne #edit).</p>
+      <p class="lockNote" id="m_baseWarn" hidden></p>
+      <label for="m_cardImg">Eigenes Bild für die WhatsApp-Karte (optional)</label>
+      <input type="file" accept="image/*" id="m_cardImg">
+      <div class="awImgRow"><img class="awThumb" id="m_cardImg_p" src="${META.cardImg||''}" style="${META.cardImg?'':'display:none'}; width:112px" alt=""><button type="button" class="pill awDel" id="m_cardImgDel" ${META.cardImg?'':'hidden'}>✕ Bild entfernen</button></div>
+      <label class="check"><input type="checkbox" id="m_cardText" ${META.cardText===false?'':'checked'}> Kalendername, Name und „Hier öffnen“ auf das Bild schreiben</label>
+      <p class="hint">ⓘ Querformat, ideal 1200 × 630 Pixel. Ohne eigenes Bild wird das Hintergrundbild des Kalenders genommen.</p>
       <div id="m_links"></div>
       <label for="m_bg" style="margin-top:14px">Hintergrundbild (optional)</label>
       <input type="file" accept="image/*" id="m_bg">
@@ -3582,6 +3595,10 @@ function openSettingsForm(){
   document.getElementById('m_typesAll').addEventListener('click', ()=> typeBoxes().forEach(b=> b.checked = true));
   document.getElementById('m_typesNone').addEventListener('click', ()=> typeBoxes().forEach(b=> b.checked = false));
   ['m_people','m_linkBase'].forEach(id=> document.getElementById(id).addEventListener('input', drawPeopleLinks));
+  document.getElementById('m_cardImg').addEventListener('change', e=>{ const f = e.target.files[0]; if(!f) return;
+    resizeImage(f, 1200, .85, url=>{ META.cardImg = url; const p = document.getElementById('m_cardImg_p'); p.src = url; p.style.display = ''; document.getElementById('m_cardImgDel').hidden = false; drawPeopleLinks(); }); });
+  document.getElementById('m_cardImgDel').addEventListener('click', e=>{ delete META.cardImg; document.getElementById('m_cardImg_p').style.display = 'none'; e.target.hidden = true; drawPeopleLinks(); });
+  document.getElementById('m_cardText').addEventListener('change', e=>{ META.cardText = e.target.checked; drawPeopleLinks(); });
   drawPeopleLinks();
   document.getElementById('m_theme').addEventListener('change', e=>{
     const t = THEMES[e.target.value]; if(!t) return;
