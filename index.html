@@ -334,7 +334,8 @@ header p{margin:8px 0 0; font-size:17px; text-shadow:0 1px 3px rgba(0,0,0,.35);}
 .mmSide{min-width:0;} .mmSide small{display:block; font-size:11px; color:#8a5a1e; margin-bottom:3px;}
 .mmUp{cursor:pointer; display:inline-block;}
 .mmSide .awThumb{width:56px !important; height:56px; flex:none;}
-.offNote{flex-basis:100%; text-align:center; margin:2px 0 0; font-size:13px; color:var(--text); opacity:.9;}
+.offNote{flex-basis:100%; text-align:center; margin:4px 0 0;}
+.offNote span{display:inline-block; background:rgba(0,0,0,.62); color:#fff; font:600 13px/1.4 Arial, sans-serif; padding:5px 14px; border-radius:14px;}
 .zoomHint{font-size:12px !important; color:var(--soft); margin:0 0 6px; text-align:center;}
 
 .codeBox{ font-family:'Courier New',Courier,monospace; font-size:18px; line-height:1.6; letter-spacing:2px; background:var(--paper); color:var(--ink); border:1px dashed var(--accent); padding:12px 14px; border-radius:8px; white-space:pre-wrap; overflow-wrap:anywhere; margin:12px 0; }
@@ -901,7 +902,7 @@ function buildToolbar(){
     <button type="button" id="awSetBtn">🏅 Urkunde einrichten</button>
     <button type="button" id="resetBtn">↺ Test zurücksetzen</button>`
     + (OFFLINE ? `<button type="button" id="fileSaveBtn" class="akte">📤 Kalender-Datei speichern</button><button type="button" id="fileLoadBtn">📥 Kalender-Datei laden</button>
-    <p class="offNote">💾 Deine Änderungen werden auf diesem Computer gespeichert. Wenn du fertig bist: „📤 Kalender-Datei speichern“ und die Datei deiner Schwester schicken.</p>` : '') : '')
+    <p class="offNote"><span>💾 Deine Änderungen werden auf diesem Computer gespeichert. Wenn du fertig bist: „📤 Kalender-Datei speichern“ und die Datei deiner Schwester schicken.</span></p>` : '') : '')
     + (hasClues || canEdit ? `<button type="button" id="akteBtn" class="akte">📁 Ermittlungsakte</button>` : '')
     + `<button type="button" id="bwBtn" class="akte" hidden>🔠 Lösungswort</button>`
     + `<button type="button" id="awBtn" class="akte" hidden>🏅 Auszeichnung</button>`;
