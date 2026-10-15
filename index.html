@@ -2258,7 +2258,7 @@ function linkBaseDefault(){
   return '';
 }
 function personLink(base, name){ return String(base||'').trim().split('#')[0] + '#fuer=' + encodeURIComponent(name.trim()); }
-function linkCard(name, cb){
+function linkCard(name, cb, type){
   const W = 1200, H = 630, cv = document.createElement('canvas'); cv.width = W; cv.height = H;
   const x = cv.getContext('2d');
   const cs = getComputedStyle(document.documentElement);
@@ -2276,7 +2276,7 @@ function linkCard(name, cb){
     x.shadowBlur = 0;
     x.fillStyle = '#fff6e6'; x.beginPath(); x.roundRect ? x.roundRect(W/2-300, 420, 600, 96, 48) : x.rect(W/2-300, 420, 600, 96); x.fill();
     x.fillStyle = '#1a2e1f'; x.font = 'bold 38px Georgia, serif'; x.fillText('🎁 Hier öffnen', W/2, 470);
-    cb(cv.toDataURL('image/png'));
+    cb(type ? cv.toDataURL(type, .86) : cv.toDataURL('image/png'));
   };
   const g = x.createLinearGradient(0, 0, 0, H); g.addColorStop(0, c1); g.addColorStop(1, c2);
   x.fillStyle = g; x.fillRect(0, 0, W, H);
@@ -2291,20 +2291,95 @@ function copyText(text, btn){
   const fallback = ()=>{ const t = document.createElement('textarea'); t.value = text; document.body.appendChild(t); t.select(); try{ document.execCommand('copy'); ok(); }catch(e){} t.remove(); };
   try{ navigator.clipboard.writeText(text).then(ok, fallback); }catch(e){ fallback(); }
 }
+function waBase(base){ base = String(base||'').trim().split('#')[0].split('?')[0]; if(/\.html?$/i.test(base)) base = base.replace(/[^/]*$/, ''); return base.endsWith('/') ? base : base + '/'; }
+function waSlugs(names){
+  const used = {};
+  return names.map(n=>{ let s = norm(n) || 'gast'; if(used[s]){ used[s]++; s += used[s]; } else used[s] = 1; return s; });
+}
+function waLink(base, slug){ return waBase(base) + slug + '.html'; }
+function waPage(base, name, slug){
+  const B = waBase(base), t = ((META.icon ? META.icon + ' ' : '') + (META.title || 'Adventskalender')).trim();
+  const target = './#fuer=' + encodeURIComponent(name);
+  const e = s => String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+  return `<!DOCTYPE html>
+<html lang="de"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>${e(t)} für ${e(name)}</title>
+<meta property="og:type" content="website">
+<meta property="og:title" content="${e(t)} für ${e(name)}">
+<meta property="og:description" content="🎁 Antippen und öffnen${META.subtitle ? ' – ' + e(META.subtitle) : ''}">
+<meta property="og:image" content="${e(B + slug)}.jpg">
+<meta property="og:image:type" content="image/jpeg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:url" content="${e(B + slug)}.html">
+<meta http-equiv="refresh" content="0; url=${e(target)}">
+<script>location.replace(${JSON.stringify(target)});<\/script>
+</head><body style="font-family:Georgia,serif;text-align:center;padding:40px"><a href="${e(target)}">🎁 Zum Adventskalender für ${e(name)}</a></body></html>
+`;
+}
+/* kleiner ZIP-Ersteller (ohne Komprimierung) */
+const CRC_T = (()=>{ const t = new Uint32Array(256); for(let n=0;n<256;n++){ let c = n; for(let k=0;k<8;k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
+function crc32(u){ let c = 0xFFFFFFFF; for(let i=0;i<u.length;i++) c = CRC_T[(c ^ u[i]) & 255] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; }
+function makeZip(files){
+  const enc = new TextEncoder(), parts = [], central = []; let off = 0;
+  const d = new Date(), dt = ((d.getHours()<<11)|(d.getMinutes()<<5)|(d.getSeconds()>>1)) & 0xFFFF, dd = (((d.getFullYear()-1980)<<9)|((d.getMonth()+1)<<5)|d.getDate()) & 0xFFFF;
+  files.forEach(f=>{
+    const name = enc.encode(f.name), data = f.data, crc = crc32(data);
+    const h = new DataView(new ArrayBuffer(30));
+    h.setUint32(0,0x04034b50,true); h.setUint16(4,20,true); h.setUint16(6,0x0800,true); h.setUint16(8,0,true); h.setUint16(10,dt,true); h.setUint16(12,dd,true);
+    h.setUint32(14,crc,true); h.setUint32(18,data.length,true); h.setUint32(22,data.length,true); h.setUint16(26,name.length,true); h.setUint16(28,0,true);
+    parts.push(new Uint8Array(h.buffer), name, data);
+    const c = new DataView(new ArrayBuffer(46));
+    c.setUint32(0,0x02014b50,true); c.setUint16(4,20,true); c.setUint16(6,20,true); c.setUint16(8,0x0800,true); c.setUint16(10,0,true); c.setUint16(12,dt,true); c.setUint16(14,dd,true);
+    c.setUint32(16,crc,true); c.setUint32(20,data.length,true); c.setUint32(24,data.length,true); c.setUint16(28,name.length,true); c.setUint32(42,off,true);
+    central.push(new Uint8Array(c.buffer), name);
+    off += 30 + name.length + data.length;
+  });
+  const cSize = central.reduce((a,b)=>a+b.length,0);
+  const e = new DataView(new ArrayBuffer(22));
+  e.setUint32(0,0x06054b50,true); e.setUint16(8,files.length,true); e.setUint16(10,files.length,true); e.setUint32(12,cSize,true); e.setUint32(16,off,true);
+  return new Blob([...parts, ...central, new Uint8Array(e.buffer)], {type:'application/zip'});
+}
+function dataUrlBytes(u){ const b = atob(u.split(',')[1]); const a = new Uint8Array(b.length); for(let i=0;i<b.length;i++) a[i] = b.charCodeAt(i); return a; }
+async function buildWhatsAppZip(names, base, btn){
+  const slugs = waSlugs(names), files = [], enc = new TextEncoder();
+  for(let i=0;i<names.length;i++){
+    if(btn) btn.textContent = `Erstelle ${i+1} von ${names.length} …`;
+    const url = await new Promise(r=> linkCard(names[i], r, 'image/jpeg'));
+    files.push({ name: slugs[i] + '.jpg', data: dataUrlBytes(url) });
+    files.push({ name: slugs[i] + '.html', data: enc.encode(waPage(base, names[i], slugs[i])) });
+  }
+  const blob = makeZip(files);
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'WhatsApp-Dateien.zip';
+  document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); }, 1500);
+  if(btn) btn.textContent = '✓ WhatsApp-Dateien.zip gespeichert';
+}
 function drawPeopleLinks(){
   const box = document.getElementById('m_links'); if(!box) return;
   const names = document.getElementById('m_people').value.split('\n').map(s=>s.trim()).filter(Boolean);
   const base = document.getElementById('m_linkBase').value.trim();
   if(!names.length){ box.innerHTML = ''; return; }
   if(!base){ box.innerHTML = '<p class="hint">Trage oben die Adresse des Kalenders ein, dann erscheinen hier die Links.</p>'; return; }
-  box.innerHTML = names.map((n,i)=>`<div class="awRow"><div class="awRowHead">🎁 ${esc(n)}</div>
-    <input type="text" readonly value="${esc(personLink(base, n))}" onclick="this.select()">
-    <div class="actions" style="margin:6px 0 0"><button type="button" class="pill awDel" data-copy="${i}">📋 Link kopieren</button><button type="button" class="pill awDel" data-card="${i}">🖼 Linkbild zeigen</button></div>
+  const slugs = waSlugs(names);
+  box.innerHTML = `<div class="awRow" style="background:#e8f5e9; border-color:#a5d6a7"><div class="awRowHead">📲 Für WhatsApp: Vorschau mit Bild</div>
+      <p class="hint" style="font-size:12px; margin:0 0 6px">Damit bei WhatsApp ein großes Bild „${esc(META.title || 'Adventskalender')} für …“ erscheint, auf das man tippt: Dateien erstellen, entpacken und alle zusammen bei GitHub hochladen. Danach die WhatsApp-Links unten verschicken.</p>
+      <button type="button" class="pill primary" id="waZip">📦 WhatsApp-Dateien für alle erstellen</button>
+      ${OFFLINE ? '' : '<p class="hint">ⓘ Das Speichern der Dateien klappt nur in der GitHub-Werkstatt.</p>'}</div>`
+    + names.map((n,i)=>`<div class="awRow"><div class="awRowHead">🎁 ${esc(n)}</div>
+    <label style="margin:2px 0 3px">📲 Link für WhatsApp (erst nach dem Hochladen der WhatsApp-Dateien)</label>
+    <input type="text" readonly value="${esc(waLink(base, slugs[i]))}" onclick="this.select()">
+    <div class="actions" style="margin:6px 0 0"><button type="button" class="pill awDel" data-wacopy="${i}">📋 WhatsApp-Link kopieren</button><button type="button" class="pill awDel" data-card="${i}">🖼 Linkbild zeigen</button></div>
+    <details style="margin-top:6px; font-size:12px"><summary style="cursor:pointer; color:#8a5a1e">Direkter Link (ohne Vorschaubild)</summary>
+      <input type="text" readonly value="${esc(personLink(base, n))}" onclick="this.select()" style="margin-top:4px">
+      <button type="button" class="pill awDel" data-copy="${i}" style="margin-top:4px">📋 Direkten Link kopieren</button></details>
     <div data-cardbox="${i}"></div></div>`).join('');
+  box.querySelector('#waZip').addEventListener('click', e=>{ const b = e.currentTarget; b.disabled = true; buildWhatsAppZip(names, base, b).catch(()=>{ b.textContent = 'Hat nicht geklappt, bitte nochmal versuchen'; }).finally(()=>{ b.disabled = false; }); });
+  box.querySelectorAll('[data-wacopy]').forEach(b=> b.addEventListener('click', ()=> copyText(waLink(base, slugs[+b.dataset.wacopy]), b)));
   box.querySelectorAll('[data-copy]').forEach(b=> b.addEventListener('click', ()=> copyText(personLink(base, names[+b.dataset.copy]), b)));
   box.querySelectorAll('[data-card]').forEach(b=> b.addEventListener('click', ()=>{
     const i = +b.dataset.card, n = names[i], cb = box.querySelector(`[data-cardbox="${i}"]`);
-    linkCard(n, url=>{ cb.innerHTML = `<img src="${url}" alt="Linkbild für ${esc(n)}" style="width:100%; border-radius:8px; margin-top:8px"><a class="pill awDel" href="${url}" download="Adventskalender-${esc(norm(n))}.png" style="display:inline-block; text-decoration:none">⬇ Bild speichern</a><p class="hint">ⓘ Falls „Bild speichern“ nicht klappt: Bild gedrückt halten (Handy) oder Rechtsklick → „Bild speichern unter“.</p>`; });
+    linkCard(n, url=>{ cb.innerHTML = `<img src="${url}" alt="Linkbild für ${esc(n)}" style="width:100%; border-radius:8px; margin-top:8px"><p class="hint">So sieht das Vorschaubild bei WhatsApp aus.</p>`; });
   }));
 }
 
