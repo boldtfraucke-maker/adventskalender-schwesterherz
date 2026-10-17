@@ -42,6 +42,7 @@ header p{margin:8px 0 0; font-size:17px; text-shadow:0 1px 3px rgba(0,0,0,.35);}
 .door.opened .doorPanel{ transform:rotateY(-32deg) translateZ(4px); box-shadow:10px 6px 20px rgba(0,0,0,.35); }
 .door.placeholder .doorPanel{ background-image:none !important; background:linear-gradient(135deg,#ffdca8,#ffb56b); }
 .plaque{ position:absolute; top:6px; left:6px; width:32px; height:32px; border-radius:50%; background:#fff; color:#a8521f; display:flex; align-items:center; justify-content:center; font-weight:bold; font-size:15px; box-shadow:0 1px 5px rgba(0,0,0,.45); border:2px solid #e8b95c; font-family:Georgia,serif; z-index:5; pointer-events:none; }
+.plaque.faint{ opacity:.45; transform:scale(.8); transform-origin:top left; }
 .lvlBadge{ position:absolute; bottom:6px; left:6px; padding:1px 6px; border-radius:10px; background:rgba(255,255,255,.92); color:#c8963e; font-size:11px; letter-spacing:1px; z-index:5; box-shadow:0 1px 4px rgba(0,0,0,.35); pointer-events:none; }
 .lvlLine{ margin:-4px 0 10px; color:#c8963e; font-size:14px; letter-spacing:1px; }
 .lvlLine span{ color:var(--soft); letter-spacing:0; font-size:13px; }
@@ -1106,7 +1107,10 @@ function render(){
     el.className = 'door' + (unlocked?'':' locked') + (isOpen?' opened':'') + (d.image?'':' placeholder');
     const bgAttr = d.image ? ` style="background-image:url('${d.image}')"` : '';
     const badge = (unlocked && solved.includes(d.day)) ? '<span class="solvedBadge" title="Gelöst">✓</span>' : '';
-    el.innerHTML = `<div class="doorPanel"${bgAttr}></div><span class="plaque">${d.day}</span>${badge}`;
+    const hideNum = !!d.image && (d.hideNum || META.hideNums);
+    const plaque = !hideNum ? `<span class="plaque">${d.day}</span>` : editMode ? `<span class="plaque faint" title="Nummer ist für Empfänger ausgeblendet">${d.day}</span>` : '';
+    el.innerHTML = `<div class="doorPanel"${bgAttr}></div>${plaque}${badge}`;
+    el.setAttribute('aria-label', 'Türchen ' + d.day);
     if(unlocked){
       el.addEventListener('click', ()=>{
         if(editMode){ openEditForm(idx); return; }
@@ -2621,6 +2625,8 @@ function openEditForm(idx){
       <input type="file" accept="image/*" id="f_img">
       <p class="hint">ⓘ Ideal: quadratisch, ca. 800 × 800 Pixel</p>
       <img class="imgPreview" id="f_preview" src="${d.image||''}" style="${d.image?'':'display:none'}" alt="">
+      <label class="check"><input type="checkbox" id="f_hideNum" ${d.hideNum?'checked':''}> Zahl ist schon im Bild – Nummer auf dem Türchen ausblenden</label>
+      <p class="hint">ⓘ Im Bearbeiten-Modus bleibt die Nummer blass sichtbar. In der Vorschau und für die Empfänger sieht man nur die Zahl im Bild.${META.hideNums ? ' (In den Einstellungen sind die Nummern gerade für alle Türchen mit Bild ausgeblendet.)' : ''}</p>
       <label for="f_title">Überschrift</label>
       <input type="text" id="f_title" value="${esc(d.title||'')}">
       <label for="f_level">Schwierigkeit (optional, erscheint als Sterne im geöffneten Türchen)</label>
@@ -3267,7 +3273,7 @@ function openEditForm(idx){
     const obj = { day:d.day, type:t, image:pendingImage, title:v('f_title'), text:v('f_text'), video: F.includes('video') ? v('f_video').trim() : '',
       images: F.includes('imgs') ? pendingImgs : [],
       hints: F.includes('hints') ? [v('f_h1'),v('f_h2'),v('f_h3')].map(s=>s.trim()).filter(Boolean) : [],
-      clue: v('f_clue'), level: +v('f_level') || 0, celTheme: v('f_cel'), intro: F.includes('intro') ? v('f_intro').trim() : '' };
+      hideNum: $('f_hideNum').checked, clue: v('f_clue'), level: +v('f_level') || 0, celTheme: v('f_cel'), intro: F.includes('intro') ? v('f_intro').trim() : '' };
     if(F.includes('code')) obj.code = v('f_code');
     if(F.includes('codeHelp')) obj.codeHelp = v('f_codeHelp');
     if(F.includes('answer')) obj.answer = v('f_answer').trim();
@@ -3527,6 +3533,8 @@ function openSettingsForm(){
       <input type="color" id="m_titleColor" value="${META.titleColor || '#f2c869'}" style="width:60px; height:36px; border:none; background:none; cursor:pointer;">
       <label for="m_subtitleColor">Textfarbe (Untertitel)</label>
       <input type="color" id="m_subtitleColor" value="${META.subtitleColor || '#cfe4d6'}" style="width:60px; height:36px; border:none; background:none; cursor:pointer;">
+      <label class="check" style="margin-top:12px"><input type="checkbox" id="m_hideNums" ${META.hideNums?'checked':''}> Nummern auf allen Türchen mit Bild ausblenden (die Zahl ist schon in den Bildern)</label>
+      <p class="hint">ⓘ Einzelne Türchen kannst du auch im Türchen-Editor einstellen. Türchen ohne Bild zeigen immer ihre Nummer.</p>
       <label for="m_doorBorderColor">Rahmenfarbe (Türchen)</label>
       <input type="color" id="m_doorBorderColor" value="${META.doorBorderColor || '#e8b95c'}" style="width:60px; height:36px; border:none; background:none; cursor:pointer;">
       <label for="m_theme">Design-Vorlage</label>
@@ -3621,6 +3629,7 @@ function openSettingsForm(){
     META.titleColor = document.getElementById('m_titleColor').value;
     META.subtitleColor = document.getElementById('m_subtitleColor').value;
     META.doorBorderColor = document.getElementById('m_doorBorderColor').value;
+    META.hideNums = document.getElementById('m_hideNums').checked;
     META.bgImage = pendingBg;
     META.theme = document.getElementById('m_theme').value;
     const st0 = document.getElementById('m_status');
