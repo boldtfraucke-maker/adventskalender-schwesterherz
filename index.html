@@ -978,8 +978,8 @@ function cleanHtml(){
   const s = root.querySelector('#subtitle'); if(s){ s.textContent=''; s.removeAttribute('style'); }
   const safe = x => JSON.stringify(x).replace(/</g,'\\u003c');
   let html = '<!DOCTYPE html>\n' + root.outerHTML;
-  if(!/<meta[^>]+charset/i.test(html.slice(0, 3000))) html = html.replace(/<head([^>]*)>/i, '<head$1><meta charset="utf-8">');
-  if(!/<meta[^>]+name="viewport"/i.test(html.slice(0, 3000))) html = html.replace(/<head([^>]*)>/i, '<head$1><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">');
+  if(OFFLINE && !/<meta[^>]+charset/i.test(html.slice(0, 3000))) html = html.replace(/<head([^>]*)>/i, '<head$1><meta charset="utf-8">');
+  if(OFFLINE && !/<meta[^>]+name="viewport"/i.test(html.slice(0, 3000))) html = html.replace(/<head([^>]*)>/i, '<head$1><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">');
   html = html.replace(/(<script type="application\/json" id="doorData">)[\s\S]*?(<\/script>)/, (m,a,b)=>a+safe(DOORS)+b);
   html = html.replace(/(<script type="application\/json" id="calMeta">)[\s\S]*?(<\/script>)/, (m,a,b)=>a+safe(META)+b);
   return html;
@@ -1152,6 +1152,7 @@ function openDoor(d){
       <p class="lockNote" id="lockNote" hidden></p>
       <form class="answerRow" id="answerForm"><input type="text" id="answerInput" autocomplete="off" placeholder="Antwort eintippen"><button type="submit" class="pill primary">Prüfen</button></form>
       <p class="feedback" id="feedback" aria-live="polite"></p></div>`;
+  if(type === 'question' && d.reward?.img) h += `<div id="rwMount"></div>`;
   if(TF.includes('solution') && (d.solution||'').trim()) h += `<div class="section" id="solArea"></div>`;
   h += `<div id="clueArea"></div>`;
   h += `<button type="button" class="pill bottomClose" id="bottomClose">Türchen schließen</button>`;
@@ -1242,19 +1243,24 @@ function openDoor(d){
   const form = document.getElementById('answerForm');
   if(form){
     const fb = document.getElementById('feedback');
-    if(isSolved(d.day)){ fb.textContent = '✓ Schon gelöst!'; fb.className='feedback ok'; }
+    const rw = type === 'question' && d.reward?.img ? document.getElementById('rwMount') : null;
+    const showReward = ()=>{ if(!rw || rw.dataset.on) return; rw.dataset.on = '1';
+      rw.innerHTML = `<div class="section"><h3>🧩 Deine Belohnung</h3><p style="margin-top:0">Setze das Bild wieder zusammen.</p><div id="rwPz"></div><p class="feedback ok" id="rwDone" hidden>🎉 Geschafft! Das Bild ist fertig.</p></div>`;
+      mountPuzzle(document.getElementById('rwPz'), { ...d, puzzle: d.reward }, ()=>{ document.getElementById('rwDone').hidden = false; }); };
+    if(isSolved(d.day)){ fb.textContent = '✓ Schon gelöst!'; fb.className='feedback ok'; showReward(); }
     form.addEventListener('submit', e=>{
       e.preventDefault();
       const given = norm(document.getElementById('answerInput').value);
       if(!given){ fb.textContent = 'Bitte zuerst eine Antwort eintippen.'; fb.className='feedback bad'; return; }
       const ok = d.answer.split('|').map(norm).filter(Boolean).includes(given);
       if(ok){
-        lsAdd(solvedKey, d.day); celebrate(d, type);
-        fb.textContent = '🎉 Richtig! Gut kombiniert.'; fb.className='feedback ok';
+        lsAdd(solvedKey, d.day); if(!rw) celebrate(d, type);
+        fb.textContent = rw ? '🎉 Richtig! Als Belohnung wartet unten ein Puzzle.' : '🎉 Richtig! Gut kombiniert.'; fb.className='feedback ok';
+        if(rw){ showReward(); setTimeout(()=> rw.scrollIntoView({behavior:'smooth', block:'start'}), 150); }
         drawSolution(); drawClue(); render();
         if(type === 'whoami') mountWhoAmI(document.getElementById('xMount'), d);
       } else {
-        fb.textContent = 'Leider nicht. Versuch es nochmal oder hol dir einen Tipp.'; fb.className='feedback bad';
+        fb.innerHTML = rw ? '<span style="font-size:30px; vertical-align:middle">👎</span> Leider falsch. Versuch es nochmal!' : 'Leider nicht. Versuch es nochmal oder hol dir einen Tipp.'; fb.className='feedback bad';
       }
     });
   }
@@ -2570,7 +2576,7 @@ const TYPE_HELP = {
 };
 const TYPE_FIELDS = {
   story:     ['video','clue'],
-  question:  ['intro','video','imgs','code','hints','answer','solution','clue'],
+  question:  ['intro','video','imgs','code','hints','answer','rw','solution','clue'],
   search:    ['intro','imgs','hints','answer','solution','clue'],
   wordgrid:  ['intro','wg','lock','hints','answer','clue'],
   cipher:    ['intro','gs','code','codeHelp','imgs','hints','answer','solution','clue'],
@@ -2866,6 +2872,18 @@ function openEditForm(idx){
         <label for="f_answer" id="f_answerLabel">Richtige Antwort zum Eintippen</label>
         <input type="text" id="f_answer" value="${esc(d.answer||'')}" placeholder="z. B. Der Gärtner | Gärtner">
         <p class="hint">ⓘ Mehrere erlaubte Antworten mit | trennen. Groß-/Kleinschreibung und Satzzeichen sind egal.</p>
+      </div>
+      <div class="fsec" data-f="rw">
+        <label class="check"><input type="checkbox" id="rw_on" ${d.reward?'checked':''}> 🧩 Nach richtiger Antwort ein Belohnungs-Puzzle zeigen</label>
+        <p class="hint">ⓘ Erst die Frage, dann als Belohnung ein Puzzle. Bei falscher Antwort erscheint 👎 und man kann es nochmal versuchen. Schön für besondere Tage wie die Adventssonntage.</p>
+        <div id="rw_box" style="${d.reward?'':'display:none'}">
+          <label for="rw_img">Bild für das Belohnungs-Puzzle</label>
+          <input type="file" accept="image/*" id="rw_img">
+          <p class="hint">ⓘ Quadratisch, Querformat oder Hochformat – alles geht. Zum Beispiel ein Foto vom Hund oder ein Bild mit „Richtig!“.</p>
+          <img class="imgPreview" id="rw_prev" src="${d.reward?.img||''}" style="${d.reward?.img?'':'display:none'}; object-fit:contain" alt="">
+          <label for="rw_n">Anzahl Teile</label>
+          <select id="rw_n"><option value="3" selected>3 Teile an der kurzen Seite (leicht)</option><option value="4">4 Teile an der kurzen Seite</option><option value="5">5 Teile an der kurzen Seite (schwer)</option></select>
+        </div>
       </div>
       <div class="fsec" data-f="lock">
         <label class="check"><input type="checkbox" id="f_gridLock"> Antwortfeld erst freigeben, wenn das Rätsel im Türchen gelöst ist</label>
@@ -3191,6 +3209,15 @@ function openEditForm(idx){
   });
 
 
+  /* Belohnungs-Puzzle (bei Frage mit Antwort) */
+  let pendingRw = d.reward?.img || '', pendingRwAr = +d.reward?.ar || 1;
+  if(d.reward?.n) $('rw_n').value = String(d.reward.n);
+  $('rw_on').addEventListener('change', e=>{ $('rw_box').style.display = e.target.checked ? '' : 'none'; });
+  $('rw_img').addEventListener('change', e=>{
+    const f = e.target.files[0]; if(!f) return;
+    resizeImage(f, 1100, .82, url=>{ const im = new Image(); im.onload = ()=>{ pendingRwAr = Math.round(im.width/im.height*1000)/1000; pendingRw = url; $('rw_prev').src = url; $('rw_prev').style.display = 'block'; }; im.src = url; });
+  });
+
   /* Memory */
   const mmSide = s => ({ t: s?.t || '', img: s?.img || '' });
   let mmDraft = (d.memory?.pairs || []).map(p=>({ a: mmSide(p.a), b: mmSide(p.b) }));
@@ -3296,6 +3323,7 @@ function openEditForm(idx){
     if(t === 'match'){ const L = v('mt_pairs').split('\n').map(l=>l.split(/\s*=\s*/)).filter(p=>p.length >= 2 && p[0].trim() && p[1].trim()).map(p=>[p[0].trim(), p.slice(1).join(' = ').trim()]); if(L.length < 2){ st.textContent = 'Bitte mindestens zwei Paare im Format Links = Rechts eintragen.'; return; } obj.match = L; }
     if(t === 'lock'){ const c = v('lk_code').replace(/\D/g,''); if(c.length < 3 || c.length > 6){ st.textContent = 'Der Code muss 3 bis 6 Ziffern haben.'; return; } obj.lock = { code:c, tries:+v('lk_tries'), wait:+v('lk_wait') }; }
     if(t === 'maze'){ if(!pendingMaze){ st.textContent = 'Bitte zuerst ein Labyrinth erzeugen und „Ins Türchen übernehmen“ drücken.'; return; } obj.maze = pendingMaze; }
+    if(t === 'question' && $('rw_on').checked){ if(!pendingRw){ st.textContent = 'Bitte ein Bild für das Belohnungs-Puzzle hochladen (oder das Häkchen entfernen).'; return; } obj.reward = { img:pendingRw, n:+v('rw_n'), ar:pendingRwAr }; }
     if(t === 'puzzle'){ if(!pendingPz){ st.textContent = 'Bitte ein Bild für das Puzzle hochladen.'; return; } obj.puzzle = { img:pendingPz, n:+v('pz_n'), ar:pendingAr }; }
     if(t === 'memory'){
       const pairs = mmDraft.map(p=>({ a:{ t:p.a.t.trim(), img:p.a.img }, b:{ t:p.b.t.trim(), img:p.b.img } })).filter(p=> p.a.t || p.a.img);
