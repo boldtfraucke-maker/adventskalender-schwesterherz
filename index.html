@@ -255,6 +255,10 @@ header p{margin:8px 0 0; font-size:17px; text-shadow:0 1px 3px rgba(0,0,0,.35);}
 .dfImg{position:relative; line-height:0; cursor:crosshair; user-select:none; -webkit-user-select:none;}
 .dfImg img{width:100%; margin:0 !important; border-radius:6px; pointer-events:none;}
 .dfImg svg{position:absolute; inset:0; width:100%; height:100%; pointer-events:none;}
+.df.full{position:fixed; inset:0; z-index:70; background:var(--card); margin:0; padding:calc(10px + env(safe-area-inset-top,0px)) 10px calc(10px + env(safe-area-inset-bottom,0px)); display:flex; flex-direction:column;}
+.df.full .wgMsg{margin:4px 0 6px !important;}
+.df.full .dfPair{flex:1; min-height:0; align-items:center; justify-content:center; overflow:auto;}
+.df.full .dfPair.row{flex-direction:row;}
 .dfEdit{margin-top:8px; border:2px dashed var(--accent); border-radius:8px;}
 .storyText p.tx{margin:0 0 .8em; text-indent:0; white-space:normal;}
 .storyText p.tx:last-child{margin-bottom:0;}
@@ -2455,6 +2459,7 @@ function mountDiff(el, d, onSolved){
   let found = lsGetJSON(key, []);
   if(!Array.isArray(found)) found = [];
   el.innerHTML = `<div class="df">
+    <div class="wgTools"><button type="button" class="pill zoomBtn" data-act="full">🔍 Vergrößern</button></div>
     <p class="wgMsg"></p>
     <div class="dfPair">
       <div class="dfImg" data-w="a"><img src="${D.a}" alt="Bild 1" draggable="false"><svg viewBox="0 0 100 100" preserveAspectRatio="none"></svg></div>
@@ -2470,7 +2475,7 @@ function mountDiff(el, d, onSolved){
       svg.innerHTML = s;
     });
     const done = found.length === D.spots.length;
-    msg.textContent = done ? '🎉 Alle Unterschiede gefunden!' : `Finde ${D.spots.length} Unterschiede. Gefunden: ${found.length}. Unterschied im oberen oder unteren Bild anklicken oder antippen.`;
+    msg.textContent = done ? '🎉 Alle Unterschiede gefunden!' : `Finde ${D.spots.length} Unterschiede. Gefunden: ${found.length}. Unterschied in einem der beiden Bilder anklicken oder antippen.`;
     return done;
   };
   el.querySelectorAll('.dfImg').forEach(box=>{
@@ -2484,6 +2489,20 @@ function mountDiff(el, d, onSolved){
       else { draw({box, x, y}); setTimeout(()=>{ if(el.isConnected) draw(); }, 600); }
     });
   });
+  /* Vergrößern: beide Bilder so groß wie möglich, nebeneinander (Querformat) oder untereinander (Hochformat) */
+  const box = el.querySelector('.df'), pair = el.querySelector('.dfPair'), zb = el.querySelector('[data-act="full"]');
+  const fitDf = ()=>{
+    const boxes = el.querySelectorAll('.dfImg');
+    if(!box.classList.contains('full')){ pair.classList.remove('row'); boxes.forEach(b=> b.style.width = ''); return; }
+    const img = boxes[0].querySelector('img'), ar = img.naturalWidth ? img.naturalHeight / img.naturalWidth : 0.75;
+    const W = pair.clientWidth, H = pair.clientHeight, gap = 8;
+    const wRow = Math.min((W - gap) / 2, H / ar), wCol = Math.min(W, (H - gap) / 2 / ar);
+    pair.classList.toggle('row', wRow > wCol);
+    boxes.forEach(b=> b.style.width = Math.floor(Math.max(wRow, wCol, 120)) + 'px');
+  };
+  zb.addEventListener('click', ()=>{ const on = box.classList.toggle('full'); zb.textContent = on ? '🔍 Verkleinern' : '🔍 Vergrößern'; document.body.style.overflow = on ? 'hidden' : ''; requestAnimationFrame(fitDf); });
+  window.addEventListener('resize', ()=>{ if(el.isConnected) fitDf(); });
+  el.querySelectorAll('.dfImg img').forEach(im=> im.addEventListener('load', fitDf));
   if(draw() ) onSolved();
 }
 
@@ -3745,7 +3764,7 @@ overlay.addEventListener('mousedown', (e)=>{ mouseDownOnBackdrop = (e.target ===
 overlay.addEventListener('click', (e)=>{ if(e.target === overlay && mouseDownOnBackdrop) overlay.classList.remove('show'); });
 document.addEventListener('keydown', e=>{
   if(e.key !== 'Escape') return;
-  const full = document.querySelector('.wg.full, .sd.full, .pz.full, .mm.full');
+  const full = document.querySelector('.wg.full, .sd.full, .pz.full, .mm.full, .df.full');
   if(!lb.hidden) closeLightbox();
   else if(full) full.querySelector('[data-act="full"]')?.click();
   else closeOverlay();
