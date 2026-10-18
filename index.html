@@ -489,7 +489,8 @@ try{ window.claude?.use?.('artifact')?.then(a => artifactApi = a).catch(()=>{});
 function esc(s){ return String(s ?? '').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
 /* ---------- Speicher pro Betrachter (Browser) ---------- */
-const YEAR0 = new Date().getFullYear();
+/* Im Januar und Februar zählt noch die Saison vom letzten Dezember (Fortschritt bleibt erhalten) */
+const YEAR0 = (d => d.getMonth() < 2 ? d.getFullYear() - 1 : d.getFullYear())(new Date());
 /* Persönlicher Link: …#fuer=Anna oder …?fuer=Anna – eigener Fortschritt pro Name */
 const FUER = (()=>{ try{ const q = new URLSearchParams(location.search).get('fuer'); const h = (location.hash.match(/fuer=([^&]+)/)||[])[1];
   return decodeURIComponent((q || h || '').replace(/\+/g,' ')).trim().slice(0,40); }catch(e){ return ''; } })();
@@ -1078,6 +1079,7 @@ function resizeImage(file, maxSize, quality, cb){
 function isUnlocked(day){
   if(previewMode) return true;
   const now = new Date();
+  if(now.getMonth()+1 < 3) return true; // Januar und Februar: alle Türchen offen zum Nachholen
   if(now.getMonth()+1 < CALENDAR_MONTH) return false;
   if(now.getMonth()+1 > CALENDAR_MONTH) return true;
   return now.getDate() >= day;
