@@ -124,7 +124,7 @@ header p{margin:8px 0 0; font-size:17px; text-shadow:0 1px 3px rgba(0,0,0,.35);}
 .sd.sam .sdCell{background:#fff;} .sd.sam .sdCell.given{background:#f4efe3;} .sd.sam .sdCell.mark{background:#ffe0b2;} .sd.sam .sdCell.sel{background:#bbdefb;} .sd.sam .sdCell.same{background:#e3f2fd;} .sd.sam .sdCell.err{background:#ffebee;}
 .sd.full{position:fixed; inset:0; z-index:70; background:var(--card); margin:0; padding:calc(10px + env(safe-area-inset-top,0px)) 10px calc(10px + env(safe-area-inset-bottom,0px)); display:flex; flex-direction:column;}
 .sd.full .sdScroll{flex:1; min-height:0; overflow:auto; -webkit-overflow-scrolling:touch;}
-.sd.full .sdBoard{width:max(100%, calc(var(--sdW) * 34px)); max-width:none;}
+.sd.full .sdBoard{max-width:none; margin:0 auto;}
 .sd.full .sdPad{grid-template-columns:repeat(auto-fit,minmax(36px,1fr)); margin-top:6px;}
 .sd.full .sdPad button{height:40px;}
 .sd.full .wgMsg{margin:4px 0 0 !important;}
@@ -902,6 +902,7 @@ function buildToolbar(){
     <button type="button" id="editBtn">✏️ Inhalte bearbeiten</button>
     <button type="button" id="settingsBtn">⚙️ Kalender-Einstellungen</button>
     <button type="button" id="awSetBtn">🏅 Urkunde einrichten</button>
+    <button type="button" id="remBtn">📲 Erinnerungen</button>
     <button type="button" id="resetBtn">↺ Test zurücksetzen</button>`
     + (OFFLINE ? `<button type="button" id="fileSaveBtn" class="akte">📤 Kalender-Datei speichern</button><button type="button" id="fileLoadBtn">📥 Kalender-Datei laden</button>
     <p class="offNote"><span>💾 Deine Änderungen werden auf diesem Computer gespeichert. Wenn du fertig bist: „📤 Kalender-Datei speichern“ und die Datei deiner Schwester schicken.</span></p>` : '') : '')
@@ -931,6 +932,7 @@ function buildToolbar(){
   });
   document.getElementById('settingsBtn').addEventListener('click', openSettingsForm);
   document.getElementById('awSetBtn').addEventListener('click', openAwardForm);
+  document.getElementById('remBtn').addEventListener('click', openReminders);
   let resetArmed = false;
   document.getElementById('resetBtn').addEventListener('click', ()=>{
     const b = document.getElementById('resetBtn');
@@ -1461,8 +1463,18 @@ function mountSudoku(el, d, onProgress){
   </div>`;
   const board = el.querySelector('.sdBoard'), pad = el.querySelector('.sdPad'), msg = el.querySelector('.wgMsg');
   const HELP = 'Feld anklicken oder antippen, dann unten ' + (S.mode==='word' ? 'einen Buchstaben' : 'eine Zahl') + ' wählen. Am PC geht auch die Tastatur.';
-  const fit = ()=>{ board.style.fontSize = Math.max(big ? 8 : 12, board.clientWidth / W * 0.5) + 'px'; };
-  try{ new ResizeObserver(fit).observe(board); }catch(e){ window.addEventListener('resize', fit); }
+  const scroller = el.querySelector('.sdScroll');
+  const fit = ()=>{
+    const box = el.querySelector('.sd');
+    if(box && box.classList.contains('full')){
+      /* Vollbild: ganzes Sudoku auf den Bildschirm einpassen (Breite UND Höhe), nur bei sehr kleinen Feldern scrollen */
+      const avail = Math.min(scroller.clientWidth, scroller.clientHeight * W / G.H);
+      const w = Math.floor(Math.max(avail, W * 16));
+      if(board.style.width !== w + 'px') board.style.width = w + 'px';
+    } else if(board.style.width) board.style.width = '';
+    board.style.fontSize = Math.max(big ? 8 : 12, board.clientWidth / W * 0.5) + 'px';
+  };
+  try{ const ro = new ResizeObserver(fit); ro.observe(board); ro.observe(scroller); }catch(e){ window.addEventListener('resize', fit); }
   pad.innerHTML = symbols.map(s=>`<button type="button" data-s="${s}">${s}</button>`).join('') + `<button type="button" class="del" data-s="">⌫</button>`;
   const solved = ()=> vals.every((v,i)=> v === S.sol[i]);
   const draw = ()=>{
@@ -2307,6 +2319,40 @@ function copyText(text, btn){
   const fallback = ()=>{ const t = document.createElement('textarea'); t.value = text; document.body.appendChild(t); t.select(); try{ document.execCommand('copy'); ok(); }catch(e){} t.remove(); };
   try{ navigator.clipboard.writeText(text).then(ok, fallback); }catch(e){ fallback(); }
 }
+/* ---------- Erinnerungen für WhatsApp ---------- */
+function remindDefault(day){ return `Guten Morgen, {Name}! 🎄 Heute öffnet sich Türchen ${day}. Viel Spaß beim Rätseln!`; }
+function remindText(d, name, link){
+  let t = String((d.remind||'').trim() || remindDefault(d.day)).replace(/\{tag\}/gi, d.day);
+  t = name ? t.replace(/\{name\}/gi, name) : t.replace(/,?\s*\{name\}/gi, '');
+  return link ? t + '\n👉 ' + link : t;
+}
+function openReminders(){
+  const people = META.people || [], base = linkBaseDefault(), slugs = waSlugs(people);
+  const today = (new Date().getMonth() === 11) ? new Date().getDate() : 0;
+  modalContent.innerHTML = `<h2>📲 Erinnerungen für WhatsApp</h2>
+    <p style="margin-top:0">Für jeden Tag ein fertiger Text mit Link. <b>Kopieren</b> drücken und in WhatsApp einfügen oder dort als Nachricht planen.</p>
+    <div class="editForm"><label for="rm_who">Für wen?</label>
+      <select id="rm_who"><option value="">Alle (ohne Namen, allgemeiner Link)</option>${people.map((n,i)=>`<option value="${i}">${esc(n)}</option>`).join('')}</select>
+      ${base ? '' : '<p class="lockNote">Unter ⚙️ Kalender-Einstellungen ist noch keine Kalender-Adresse eingetragen. Dann wird kein Link angehängt.</p>'}
+      ${people.length ? '' : '<p class="hint">ⓘ Namen trägst du unter ⚙️ Kalender-Einstellungen bei „Persönliche Links“ ein.</p>'}
+    </div>
+    <div id="rm_list"></div>
+    <button type="button" class="pill bottomClose" id="bottomClose">Schließen</button>`;
+  const draw = ()=>{
+    const w = document.getElementById('rm_who').value, i = w === '' ? -1 : +w, name = i >= 0 ? people[i] : '';
+    const link = !base ? '' : i >= 0 ? waLink(base, slugs[i]) : String(base).split('#')[0];
+    const days = [...DOORS].sort((a,b)=>a.day-b.day);
+    document.getElementById('rm_list').innerHTML = days.map(d=>`<div class="awRow"${d.day === today ? ' style="border-color:#e0a83a; background:#fff6e0"' : ''}>
+        <div class="awRowHead">${d.day}. Dezember${d.day === today ? ' · heute' : ''}${(d.remind||'').trim() ? '' : ' <span class="hint" style="font-weight:normal">(Standardtext)</span>'}</div>
+        <p style="white-space:pre-wrap; margin:4px 0 6px; font-size:14px">${esc(remindText(d, name, link))}</p>
+        <button type="button" class="pill awDel" data-rm="${d.day}">📋 Kopieren</button></div>`).join('');
+    document.querySelectorAll('[data-rm]').forEach(b=> b.addEventListener('click', ()=>{ const d = DOORS.find(x=>x.day === +b.dataset.rm); copyText(remindText(d, name, link), b); }));
+  };
+  document.getElementById('rm_who').addEventListener('change', draw); draw();
+  document.getElementById('bottomClose').addEventListener('click', closeOverlay);
+  overlay.classList.add('show'); modal.scrollTop = 0;
+  if(today) setTimeout(()=> document.querySelector(`[data-rm="${today}"]`)?.scrollIntoView({block:'center'}), 50);
+}
 function waBase(base){ base = String(base||'').trim().split('#')[0].split('?')[0]; if(/\.html?$/i.test(base)) base = base.replace(/[^/]*$/, ''); return base.endsWith('/') ? base : base + '/'; }
 function waSlugs(names){
   const used = {};
@@ -2907,6 +2953,11 @@ function openEditForm(idx){
         <p class="hint">ⓘ Erscheint in der Akte, sobald das Rätsel gelöst ist (bei Türchen ohne Rätsel: beim Öffnen).</p>
       </div>
 
+      <div class="section remSec">
+        <label for="f_remind">📲 Erinnerung für diesen Tag (für WhatsApp, freiwillig)</label>
+        <textarea id="f_remind" rows="3" placeholder="${esc(remindDefault(d.day))}">${esc(d.remind||'')}</textarea>
+        <p class="hint">ⓘ Kurze, nette Einleitung zum Türchen. {Name} wird durch den Namen ersetzt, {Tag} durch die Zahl des Türchens. Der Kalender-Link wird beim Kopieren automatisch angehängt. Leer lassen = Standardtext (grau). Alle Erinnerungen findest du oben unter „📲 Erinnerungen“.</p>
+      </div>
       <div class="row"><button class="saveBtn" id="f_save" type="button">Für alle speichern</button></div>
       <p id="f_status" style="font-size:12px; color:#888; margin-top:8px;"></p>
       <div class="section">
@@ -3303,6 +3354,7 @@ function openEditForm(idx){
       images: F.includes('imgs') ? pendingImgs : [],
       hints: F.includes('hints') ? [v('f_h1'),v('f_h2'),v('f_h3')].map(s=>s.trim()).filter(Boolean) : [],
       hideNum: $('f_hideNum').checked, clue: v('f_clue'), level: +v('f_level') || 0, celTheme: v('f_cel'), intro: F.includes('intro') ? v('f_intro').trim() : '' };
+    if(v('f_remind').trim()) obj.remind = v('f_remind').trim();
     if(F.includes('code')) obj.code = v('f_code');
     if(F.includes('codeHelp')) obj.codeHelp = v('f_codeHelp');
     if(F.includes('answer')) obj.answer = v('f_answer').trim();
