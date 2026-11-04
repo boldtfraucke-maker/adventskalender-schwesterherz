@@ -369,6 +369,13 @@ header p{margin:8px 0 0; font-size:17px; text-shadow:0 1px 3px rgba(0,0,0,.35);}
 .cdList{display:flex; flex-direction:column; gap:4px; max-height:170px; overflow:auto; border:1px solid #eadfc8; border-radius:8px; padding:4px; background:#fffaf0;}
 .cdList button{text-align:left; padding:5px 8px; font-size:12px; border-radius:6px;}
 .cdList button.on{background:var(--accent,#c9971c); color:#fff; border-color:transparent;}
+.ceStage{position:relative; width:100%; line-height:0; border-radius:8px; overflow:hidden; box-shadow:0 2px 10px rgba(0,0,0,.2); touch-action:none;}
+.ceStage canvas{width:100%; height:auto; display:block;}
+.ceHandles{position:absolute; inset:0;}
+.ceBox{position:absolute; outline:1px dashed rgba(33,150,243,.55); border-radius:4px; cursor:grab; touch-action:none;}
+.ceBox.sel{outline:2px solid rgba(33,150,243,.95);}
+.ceBox:focus{outline-width:2px;}
+.ceRs{position:absolute; right:-7px; bottom:-7px; width:14px; height:14px; background:#2196f3; border:2px solid #fff; border-radius:50%; cursor:nwse-resize;}
 .cdRow2{display:grid; grid-template-columns:1fr 1fr; gap:8px;}
 .certStamp{display:inline-block; margin:14px auto 0; transform:rotate(-7deg); border:3px solid rgba(179,38,30,.75); color:rgba(179,38,30,.8); padding:4px 10px; font:bold 13px/1.2 'Courier New',monospace; letter-spacing:2px; border-radius:6px; max-width:46%;}
 .forWho{display:inline-block; margin-top:8px; padding:3px 14px; border-radius:16px; background:rgba(0,0,0,.28); font-size:16px;}
@@ -1381,6 +1388,7 @@ function cleanHtml(){
   root.querySelectorAll('script[src]').forEach(n=>n.remove());
   root.querySelectorAll('link[data-certfonts], link[href*="family=Merriweather"]').forEach(n=>n.remove());
   const md = root.querySelector('#modal'); if(md) md.className = 'modal';
+  root.querySelector('#cardEd')?.remove();
   root.querySelectorAll('style').forEach(n=>{ if(n.id !== 'appStyle' && /swal2|chrome-extension/.test(n.textContent)) n.remove(); });
   const body = root.querySelector('body');
   if(body){
@@ -2703,36 +2711,238 @@ function linkBaseDefault(){
   return '';
 }
 function personLink(base, name){ return String(base||'').trim().split('#')[0] + '#fuer=' + encodeURIComponent(name.trim()); }
-function linkCard(name, cb, type){
-  const W = 1200, H = 630, cv = document.createElement('canvas'); cv.width = W; cv.height = H;
-  const x = cv.getContext('2d');
+/* ---------- WhatsApp-Karte: Layout aus Elementen (Texte, Flächen, Zierleisten, Rahmen) ---------- */
+const CARD_W = 1200, CARD_H = 630;
+const ORN_STYLES = [['holly','🍃 Stechpalme mit Beeren'],['stars','⭐ Sterne'],['fir','🌲 Tannenzweige'],['snow','❄️ Schneeflocke'],['plain','◆ schlicht mit Raute']];
+let cardSeq = 0;
+function cardItem(type, o){
+  const base = { id:'c' + Date.now().toString(36) + (cardSeq++), type, x:600, y:315 };
+  const D = {
+    text:  { text:'Dein Text', size:44, font:'georgia', color:'#fff6e6', bold:true, italic:false, align:'center', shadow:true, shColor:'#301a0a', shBlur:20, shAlpha:.85, fit:true },
+    panel: { w:460, h:80, color:'#2a1a0c', alpha:.42, radius:40, border:true, bColor:'#f2c869' },
+    orn:   { w:520, style:'holly', color:'#f2c869' },
+    frame: { inset:22, lw:4, color:'#f2c869' }
+  }[type] || {};
+  return Object.assign(base, JSON.parse(JSON.stringify(D)), o || {});
+}
+function cardDefaultItems(){ return [
+  cardItem('frame'),
+  cardItem('text',  { text:'{titel}', y:92, size:62, color:'#fff6e6' }),
+  cardItem('orn',   { y:162, w:560, style:'holly' }),
+  cardItem('text',  { text:'für {name}', y:250, size:112, color:'#f2c869' }),
+  cardItem('panel', { y:562, w:470, h:78, radius:39, alpha:.42 }),
+  cardItem('text',  { text:'🎁 Zum Adventskalender', y:563, size:38, color:'#fff6e6', shBlur:10, shAlpha:.7 })
+]; }
+function cardItems(){ return Array.isArray(META.cardLayout) && META.cardLayout.length ? META.cardLayout : cardDefaultItems(); }
+function cardTitleText(){ return (META.cardTitle || '').trim() || ((META.icon ? META.icon + ' ' : '') + (META.title || 'Adventskalender')).trim(); }
+function cardResolve(t, name){
+  const v = { name: name || '', titel: cardTitleText() }, tpl = String(t ?? ''), keys = tpl.match(/\{(name|titel)\}/gi) || [];
+  if(keys.length && keys.every(k=> !v[k.slice(1,-1).toLowerCase()])) return '';
+  return tpl.replace(/\{(name|titel)\}/gi, (m,k)=> v[k.toLowerCase()]).trim();
+}
+function hexRgba(hex, a){ const h = String(hex||'#000').replace('#',''); const n = parseInt(h.length === 3 ? h.split('').map(c=>c+c).join('') : h, 16) || 0; return `rgba(${n>>16&255},${n>>8&255},${n&255},${a})`; }
+function drawOrnament(x, it){
+  const cx = +it.x, cy = +it.y, half = Math.max(40, +it.w / 2), c = it.color || '#f2c869';
+  x.save(); x.strokeStyle = c; x.fillStyle = c; x.lineWidth = 3; x.lineCap = 'round'; x.shadowColor = 'rgba(48,26,10,.75)'; x.shadowBlur = 8;
+  const gap = it.style === 'plain' ? 16 : it.style === 'snow' ? 30 : it.style === 'holly' ? 46 : 38;
+  const line = (a, b)=>{ x.beginPath(); x.moveTo(a, cy); x.lineTo(b, cy); x.stroke(); };
+  const star = (sx, sy, r)=>{ x.beginPath(); for(let k=0;k<10;k++){ const rr = k%2 ? r*.45 : r, an = -Math.PI/2 + k*Math.PI/5; x.lineTo(sx + rr*Math.cos(an), sy + rr*Math.sin(an)); } x.closePath(); x.fill(); };
+  line(cx - half, cx - gap); line(cx + gap, cx + half);
+  x.beginPath(); x.arc(cx - half - 7, cy, 3.5, 0, Math.PI*2); x.arc(cx + half + 7, cy, 3.5, 0, Math.PI*2); x.fill();
+  if(it.style === 'plain'){ x.beginPath(); x.moveTo(cx, cy-8); x.lineTo(cx+8, cy); x.lineTo(cx, cy+8); x.lineTo(cx-8, cy); x.closePath(); x.fill(); }
+  if(it.style === 'stars'){ star(cx, cy, 17); star(cx - half*.55, cy, 8); star(cx + half*.55, cy, 8); }
+  if(it.style === 'snow'){ x.lineWidth = 2.6; for(let k=0;k<6;k++){ const an = k*Math.PI/3, ex = cx + 18*Math.cos(an), ey = cy + 18*Math.sin(an);
+      x.beginPath(); x.moveTo(cx, cy); x.lineTo(ex, ey); x.stroke();
+      [[.55,.42]].forEach(([t,l])=>{ const bx = cx + 18*t*Math.cos(an), by = cy + 18*t*Math.sin(an);
+        [an+.7, an-.7].forEach(b=>{ x.beginPath(); x.moveTo(bx, by); x.lineTo(bx + 18*l*Math.cos(b)*.6, by + 18*l*Math.sin(b)*.6); x.stroke(); }); }); } }
+  if(it.style === 'holly'){
+    const leaf = (dir)=>{ x.save(); x.translate(cx + dir*8, cy); x.rotate(dir > 0 ? -.25 : .25); x.scale(dir, 1); x.beginPath();
+      x.moveTo(0, 0); x.quadraticCurveTo(10, -13, 22, -8); x.quadraticCurveTo(25, -16, 32, -9); x.quadraticCurveTo(38, -12, 42, -3);
+      x.quadraticCurveTo(34, 2, 38, 8); x.quadraticCurveTo(28, 6, 26, 12); x.quadraticCurveTo(18, 6, 12, 10); x.quadraticCurveTo(8, 4, 0, 0); x.closePath();
+      x.fillStyle = '#3d7a3a'; x.fill(); x.strokeStyle = c; x.lineWidth = 1.5; x.stroke(); x.restore(); };
+    leaf(-1); leaf(1);
+    [[-7,-3],[7,-3],[0,6]].forEach(([dx,dy])=>{ x.beginPath(); x.arc(cx+dx, cy+dy, 6.5, 0, Math.PI*2); x.fillStyle = '#c62828'; x.fill(); x.strokeStyle = 'rgba(255,255,255,.55)'; x.lineWidth = 1; x.stroke(); });
+  }
+  if(it.style === 'fir'){
+    const sprig = (dir)=>{ const x0 = cx + dir*12, len = 40; x.save(); x.strokeStyle = '#2f6b3a'; x.lineWidth = 2.4;
+      x.beginPath(); x.moveTo(x0, cy); x.lineTo(x0 + dir*len, cy); x.stroke();
+      for(let k=0;k<6;k++){ const px = x0 + dir*(k*7 + 4); [-1,1].forEach(sg=>{ x.beginPath(); x.moveTo(px, cy); x.lineTo(px + dir*7, cy + sg*9); x.stroke(); }); }
+      x.restore(); };
+    sprig(-1); sprig(1); star(cx, cy, 10);
+  }
+  x.restore();
+}
+/* zeichnet die Karte. Gibt die Umrisse der Elemente zurück (für den Editor). */
+function drawCard(x, items, name, bgImg, opts){
+  const W = CARD_W, H = CARD_H, boxes = {};
   const cs = getComputedStyle(document.documentElement);
-  const c1 = cs.getPropertyValue('--bg1').trim() || '#1f4a3a', c2 = cs.getPropertyValue('--bg2').trim() || '#2f6b4f';
-  const gold = META.doorBorderColor || '#f2c869';
-  const textOn = !META.cardImg || META.cardText !== false;
-  const finish = ()=>{
-    if(!textOn){ cb(type ? cv.toDataURL(type, .86) : cv.toDataURL('image/png')); return; }
-    x.fillStyle = 'rgba(0,0,0,.38)'; x.fillRect(0, 0, W, H);
-    x.strokeStyle = META.doorBorderColor || '#e8b95c'; x.lineWidth = 10; x.strokeRect(24, 24, W-48, H-48);
-    x.textAlign = 'center'; x.textBaseline = 'middle';
-    const fit = (t, size, maxW, font) => { let s = size; do { x.font = `bold ${s}px ${font}`; s -= 2; } while(x.measureText(t).width > maxW && s > 16); };
-    x.shadowColor = 'rgba(0,0,0,.6)'; x.shadowBlur = 8;
-    x.fillStyle = '#fff6e6'; const title = ((META.icon ? META.icon + ' ' : '') + (META.title||'Adventskalender')).trim();
-    fit(title, 64, W-140, 'Georgia, serif'); x.fillText(title, W/2, 170);
-    x.fillStyle = gold; fit('für ' + name, 92, W-140, 'Georgia, serif'); x.fillText('für ' + name, W/2, 310);
-    x.shadowBlur = 0;
-    x.fillStyle = '#fff6e6'; x.beginPath(); x.roundRect ? x.roundRect(W/2-300, 420, 600, 96, 48) : x.rect(W/2-300, 420, 600, 96); x.fill();
-    x.fillStyle = '#1a2e1f'; x.font = 'bold 38px Georgia, serif'; x.fillText('🎁 Hier öffnen', W/2, 470);
-    cb(type ? cv.toDataURL(type, .86) : cv.toDataURL('image/png'));
-  };
-  const g = x.createLinearGradient(0, 0, 0, H); g.addColorStop(0, c1); g.addColorStop(1, c2);
+  const g = x.createLinearGradient(0, 0, 0, H); g.addColorStop(0, cs.getPropertyValue('--bg1').trim() || '#1f4a3a'); g.addColorStop(1, cs.getPropertyValue('--bg2').trim() || '#2f6b4f');
   x.fillStyle = g; x.fillRect(0, 0, W, H);
-  const bgSrc = META.cardImg || META.bgImage;
-  if(bgSrc){
-    const im = new Image();
-    im.onload = ()=>{ const s = Math.max(W/im.width, H/im.height); x.drawImage(im, (W - im.width*s)/2, (H - im.height*s)/2, im.width*s, im.height*s); finish(); };
-    im.onerror = finish; im.src = bgSrc;
-  } else finish();
+  if(bgImg){ const s = Math.max(W/bgImg.width, H/bgImg.height); x.drawImage(bgImg, (W - bgImg.width*s)/2, (H - bgImg.height*s)/2, bgImg.width*s, bgImg.height*s); }
+  if(opts && opts.noText) return boxes;
+  (items || []).forEach(it=>{
+    x.save();
+    if(it.type === 'frame'){ x.strokeStyle = it.color; x.lineWidth = +it.lw; x.shadowColor = 'rgba(48,26,10,.6)'; x.shadowBlur = 6; const k = +it.inset; x.strokeRect(k, k, W - 2*k, H - 2*k); boxes[it.id] = { x:k, y:k, w:W-2*k, h:H-2*k, frame:true }; }
+    else if(it.type === 'panel'){ const w = +it.w, h = +it.h, px = it.x - w/2, py = it.y - h/2, r = Math.min(+it.radius, h/2, w/2);
+      x.beginPath(); x.roundRect ? x.roundRect(px, py, w, h, r) : x.rect(px, py, w, h); x.fillStyle = hexRgba(it.color, +it.alpha); x.fill();
+      if(it.border){ x.strokeStyle = it.bColor || '#f2c869'; x.lineWidth = 2.5; x.stroke(); }
+      boxes[it.id] = { x:px, y:py, w, h }; }
+    else if(it.type === 'orn'){ drawOrnament(x, it); boxes[it.id] = { x:it.x - it.w/2 - 14, y:it.y - 20, w:+it.w + 28, h:40 }; }
+    else if(it.type === 'text'){
+      const t = cardResolve(it.text, name); if(!t){ x.restore(); return; }
+      let sz = +it.size; const fam = certFontCss(it.font), st = (it.italic ? 'italic ' : '') + (it.bold ? 'bold ' : '');
+      const setF = ()=>{ x.font = `${st}${sz}px ${fam}`; }; setF();
+      if(it.fit !== false){ while(x.measureText(t).width > W - 120 && sz > 14){ sz -= 2; setF(); } }
+      x.textAlign = it.align || 'center'; x.textBaseline = 'middle';
+      if(it.shadow){ x.shadowColor = hexRgba(it.shColor, +it.shAlpha); x.shadowBlur = +it.shBlur; x.shadowOffsetY = 3; x.fillStyle = it.color; x.fillText(t, it.x, it.y);
+        x.shadowColor = hexRgba(it.shColor, Math.min(1, +it.shAlpha + .1)); x.shadowBlur = Math.max(2, it.shBlur / 3); x.shadowOffsetY = 2; }
+      x.fillStyle = it.color; x.fillText(t, it.x, it.y);
+      const tw = x.measureText(t).width, left = it.align === 'left' ? it.x : it.align === 'right' ? it.x - tw : it.x - tw/2;
+      boxes[it.id] = { x:left - 8, y:it.y - sz*.62, w:tw + 16, h:sz*1.24 };
+    }
+    x.restore();
+  });
+  return boxes;
+}
+function cardFontsReady(items){
+  try{ loadCertFonts(); const L = (items||[]).filter(i=> i.type === 'text').map(i=> document.fonts.load(`${i.bold?'bold ':''}${+i.size||40}px ${certFontCss(i.font)}`, 'AäÖü🎁'));
+    return Promise.race([Promise.all(L), new Promise(r=> setTimeout(r, 2500))]); }catch(e){ return Promise.resolve(); }
+}
+function linkCard(name, cb, type){
+  const cv = document.createElement('canvas'); cv.width = CARD_W; cv.height = CARD_H; const x = cv.getContext('2d');
+  const textOn = !META.cardImg || META.cardText !== false, items = cardItems();
+  const out = img=> cardFontsReady(items).then(()=>{ drawCard(x, items, name, img, { noText: !textOn }); cb(type ? cv.toDataURL(type, .86) : cv.toDataURL('image/png')); });
+  const src = META.cardImg || META.bgImage;
+  if(src){ const im = new Image(); im.onload = ()=> out(im); im.onerror = ()=> out(null); im.src = src; } else out(null);
+}
+/* ---------- Karten-Editor ---------- */
+function openCardEditor(sampleName){
+  let items = JSON.parse(JSON.stringify(cardItems())), sel = (items.find(i=> i.type === 'text') || items[0] || {}).id, bg = null;
+  const name = sampleName || 'Name';
+  document.getElementById('cardEd')?.remove();
+  const wrap = document.createElement('div'); wrap.id = 'cardEd'; wrap.className = 'overlay show'; wrap.style.zIndex = 80;
+  wrap.innerHTML = `<div class="modal wide" style="position:relative"><button type="button" class="closeBtn" id="ce_x" aria-label="Schließen">✕</button>
+    <h2>🎨 WhatsApp-Karte gestalten</h2>
+    <p class="hint" style="margin-top:0">ⓘ Element anklicken und mit der Maus verschieben. Bei Flächen an der Ecke ziehen = Größe ändern. Pfeiltasten = fein. Beispielname: <b>${esc(name)}</b></p>
+    <div class="cdGrid">
+      <div><div class="ceStage" id="ce_stage"><canvas id="ce_cv" width="${CARD_W}" height="${CARD_H}"></canvas><div class="ceHandles" id="ce_h"></div></div>
+        <p class="cdPos" id="ce_pos"></p></div>
+      <div class="editForm" style="margin:0">
+        <label>Elemente (oben = hinten, unten = vorne)</label>
+        <div class="cdList" id="ce_list"></div>
+        <div class="cdRow2" style="margin-top:6px"><select id="ce_add"><option value="text">Text</option><option value="panel">Fläche</option><option value="orn">Zierleiste</option><option value="frame">Rahmen</option></select>
+          <button type="button" class="pill" id="ce_addBtn">➕ hinzufügen</button></div>
+        <div id="ce_props"></div>
+        <div class="actions" style="margin-top:12px; flex-wrap:wrap">
+          <button type="button" class="saveBtn" id="ce_save">Speichern</button>
+          <button type="button" class="pill" id="ce_back">← Zurück ohne Speichern</button>
+          <button type="button" class="pill" id="ce_reset">↺ Vorschlag</button>
+        </div>
+        <p id="ce_status" style="font-size:12px; color:#888; margin-top:8px;"></p>
+      </div></div></div>`;
+  document.body.appendChild(wrap);
+  const $ = id => document.getElementById(id), cv = $('ce_cv'), ctx = cv.getContext('2d'), H = $('ce_h');
+  const cur = ()=> items.find(i=> i.id === sel);
+  const LBL = { text:'Text', panel:'Fläche', orn:'Zierleiste', frame:'Rahmen' };
+  const label = it => it.type === 'text' ? `Text: ${String(it.text).slice(0, 22)}` : it.type === 'orn' ? `Zierleiste (${(ORN_STYLES.find(o=>o[0]===it.style)||[])[1]||''})` : LBL[it.type];
+  let boxes = {};
+  const draw = ()=>{
+    boxes = drawCard(ctx, items, name, bg);
+    H.innerHTML = items.map(it=>{ const b = boxes[it.id]; if(!b || b.frame) return '';
+      const st = `left:${b.x/CARD_W*100}%; top:${b.y/CARD_H*100}%; width:${b.w/CARD_W*100}%; height:${b.h/CARD_H*100}%;`;
+      return `<div class="ceBox${it.id===sel?' sel':''}" data-id="${esc(it.id)}" tabindex="0" style="${st}">${it.type === 'panel' && it.id === sel ? '<i class="ceRs" data-rs="1"></i>' : ''}</div>`; }).join('');
+    const it = cur(); $('ce_pos').textContent = it && it.type !== 'frame' ? `${LBL[it.type]}: ${Math.round(it.x)} / ${Math.round(it.y)} Pixel (von 1200 × 630)` : '';
+    bindHandles();
+  };
+  const drawList = ()=>{ $('ce_list').innerHTML = items.map(it=>`<button type="button" class="pill${it.id===sel?' on':''}" data-sel="${esc(it.id)}">${esc(label(it))}</button>`).join('') || '<small>Keine Elemente.</small>';
+    $('ce_list').querySelectorAll('[data-sel]').forEach(b=> b.addEventListener('click', ()=>{ sel = b.dataset.sel; full(); })); };
+  const rng = (id, lbl, min, max, step, val, unit='')=> `<label for="${id}">${lbl}: <b id="${id}V">${val}${unit}</b></label><input type="range" id="${id}" min="${min}" max="${max}" step="${step}" value="${val}">`;
+  const drawProps = ()=>{
+    const it = cur(), P = $('ce_props'); if(!it){ P.innerHTML = ''; return; }
+    let h = '';
+    if(it.type === 'text'){
+      h += `<label for="ce_text">Text</label><input type="text" id="ce_text" value="${esc(it.text)}">
+        <p class="hint">ⓘ {name} = Name des Empfängers, {titel} = „Text oben auf der Karte“ bzw. Kalender-Titel.</p>
+        <label for="ce_font">Schriftart</label><select id="ce_font">${CERT_FONTS.map(f=>`<option value="${f[0]}">${esc(f[2])}</option>`).join('')}</select>
+        ${rng('ce_size','Schriftgröße',14,160,1,+it.size,' px')}
+        <div class="cdRow2"><div><label for="ce_color">Farbe</label><input type="color" id="ce_color" value="${esc(it.color)}" style="width:100%; height:36px; padding:2px"></div>
+          <div><label>&nbsp;</label><label class="check" style="margin:0"><input type="checkbox" id="ce_bold" ${it.bold?'checked':''}> Fett</label><label class="check" style="margin:0"><input type="checkbox" id="ce_it" ${it.italic?'checked':''}> Kursiv</label></div></div>
+        <label>Ausrichtung</label><div class="cdAlign">${[['left','⬅ links'],['center','↔ Mitte'],['right','rechts ➡']].map(([k,l])=>`<button type="button" class="pill${it.align===k?' on':''}" data-al="${k}">${l}</button>`).join('')}</div>
+        <label class="check" style="margin-top:8px"><input type="checkbox" id="ce_sh" ${it.shadow?'checked':''}> Schatten</label>
+        <div id="ce_shBox" ${it.shadow?'':'hidden'}><div class="cdRow2"><div><label for="ce_shc">Schattenfarbe</label><input type="color" id="ce_shc" value="${esc(it.shColor)}" style="width:100%; height:36px; padding:2px"></div><div></div></div>
+          ${rng('ce_shb','Weichheit',0,40,1,+it.shBlur)}${rng('ce_sha','Stärke',0,1,.05,+it.shAlpha)}</div>`;
+    } else if(it.type === 'panel'){
+      h += `${rng('ce_w','Breite',40,1200,2,+it.w,' px')}${rng('ce_h2','Höhe',20,630,2,+it.h,' px')}
+        <div class="cdRow2"><div><label for="ce_pc">Farbe</label><input type="color" id="ce_pc" value="${esc(it.color)}" style="width:100%; height:36px; padding:2px"></div><div></div></div>
+        ${rng('ce_pa','Deckkraft (0 = ganz durchsichtig)',0,1,.02,+it.alpha)}${rng('ce_pr','Eckenrundung',0,200,1,+it.radius,' px')}
+        <label class="check"><input type="checkbox" id="ce_pb" ${it.border?'checked':''}> Goldener Rand</label>
+        <button type="button" class="pill" id="ce_fit" style="margin-top:6px">⤢ Größe an einen Text anpassen</button>
+        <p class="hint">ⓘ Passt die Fläche an den Text an, der mittig darüber liegt (mit etwas Rand).</p>`;
+    } else if(it.type === 'orn'){
+      h += `<label for="ce_os">Muster</label><select id="ce_os">${ORN_STYLES.map(o=>`<option value="${o[0]}">${esc(o[1])}</option>`).join('')}</select>
+        ${rng('ce_ow','Breite',100,1100,10,+it.w,' px')}<label for="ce_oc">Linienfarbe</label><input type="color" id="ce_oc" value="${esc(it.color)}" style="width:100%; height:36px; padding:2px">`;
+    } else if(it.type === 'frame'){
+      h += `${rng('ce_fi','Abstand zum Rand',0,80,1,+it.inset,' px')}${rng('ce_fl','Linienstärke',1,20,1,+it.lw,' px')}<label for="ce_fc">Farbe</label><input type="color" id="ce_fc" value="${esc(it.color)}" style="width:100%; height:36px; padding:2px">`;
+    }
+    h += `<div class="actions" style="margin-top:10px; flex-wrap:wrap">${it.type !== 'frame' ? '<button type="button" class="pill" id="ce_cx">↔ waagerecht mittig</button>' : ''}<button type="button" class="pill" id="ce_up">⬆ nach hinten</button><button type="button" class="pill" id="ce_dn">⬇ nach vorne</button><button type="button" class="pill dangerBtn" id="ce_del">🗑 entfernen</button></div>`;
+    P.innerHTML = h;
+    const on = (id, ev, fn)=>{ const e = $(id); if(e) e.addEventListener(ev, fn); };
+    const num = (id, key, unit='')=> on(id, 'input', e=>{ it[key] = +e.target.value; $(id+'V').textContent = e.target.value + unit; draw(); });
+    if(it.type === 'text'){
+      $('ce_font').value = CERT_FONTS.some(f=> f[0] === it.font) ? it.font : CERT_FONTS[0][0];
+      on('ce_text','input', e=>{ it.text = e.target.value; draw(); drawList(); });
+      on('ce_font','change', e=>{ it.font = e.target.value; cardFontsReady([it]).then(draw); });
+      num('ce_size','size',' px'); on('ce_color','input', e=>{ it.color = e.target.value; draw(); });
+      on('ce_bold','change', e=>{ it.bold = e.target.checked; draw(); }); on('ce_it','change', e=>{ it.italic = e.target.checked; draw(); });
+      P.querySelectorAll('[data-al]').forEach(b=> b.addEventListener('click', ()=>{ it.align = b.dataset.al; P.querySelectorAll('[data-al]').forEach(x=> x.classList.toggle('on', x === b)); draw(); }));
+      on('ce_sh','change', e=>{ it.shadow = e.target.checked; $('ce_shBox').hidden = !it.shadow; draw(); });
+      on('ce_shc','input', e=>{ it.shColor = e.target.value; draw(); }); num('ce_shb','shBlur'); num('ce_sha','shAlpha');
+    }
+    if(it.type === 'panel'){ num('ce_w','w',' px'); num('ce_h2','h',' px'); num('ce_pa','alpha'); num('ce_pr','radius',' px');
+      on('ce_pc','input', e=>{ it.color = e.target.value; draw(); }); on('ce_pb','change', e=>{ it.border = e.target.checked; draw(); });
+      on('ce_fit','click', ()=>{ const t = items.filter(o=> o.type === 'text' && boxes[o.id]).sort((a,b)=> Math.hypot(a.x-it.x, a.y-it.y) - Math.hypot(b.x-it.x, b.y-it.y))[0];
+        if(!t) return; const b = boxes[t.id]; it.w = Math.round(b.w + 44); it.h = Math.round(b.h + 14); it.x = b.x + b.w/2; it.y = b.y + b.h/2; it.radius = Math.round(it.h/2); drawProps(); draw(); }); }
+    if(it.type === 'orn'){ $('ce_os').value = it.style; on('ce_os','change', e=>{ it.style = e.target.value; draw(); drawList(); }); num('ce_ow','w',' px'); on('ce_oc','input', e=>{ it.color = e.target.value; draw(); }); }
+    if(it.type === 'frame'){ num('ce_fi','inset',' px'); num('ce_fl','lw',' px'); on('ce_fc','input', e=>{ it.color = e.target.value; draw(); }); }
+    on('ce_cx','click', ()=>{ it.x = CARD_W/2; if(it.type === 'text') it.align = 'center'; drawProps(); draw(); });
+    on('ce_up','click', ()=>{ const k = items.indexOf(it); if(k > 0){ items.splice(k,1); items.splice(k-1,0,it); full(); } });
+    on('ce_dn','click', ()=>{ const k = items.indexOf(it); if(k < items.length-1){ items.splice(k,1); items.splice(k+1,0,it); full(); } });
+    on('ce_del','click', ()=>{ items = items.filter(o=> o !== it); sel = (items[0]||{}).id; full(); });
+  };
+  function bindHandles(){
+    const toPx = e=>{ const r = H.getBoundingClientRect(); return { x:(e.clientX - r.left) / r.width * CARD_W, y:(e.clientY - r.top) / r.height * CARD_H }; };
+    H.querySelectorAll('.ceBox').forEach(el=>{
+      const it = items.find(o=> o.id === el.dataset.id); let drag = null;
+      el.addEventListener('pointerdown', e=>{ e.preventDefault(); e.stopPropagation();
+        const p = toPx(e), rs = e.target.dataset.rs;
+        if(sel !== it.id){ sel = it.id; drawList(); drawProps(); }
+        drag = rs ? { rs:true } : { dx:p.x - it.x, dy:p.y - it.y }; drag.id = e.pointerId; el.setPointerCapture(e.pointerId); el.focus({preventScroll:true});
+        H.querySelectorAll('.ceBox').forEach(b=> b.classList.toggle('sel', b === el)); });
+      el.addEventListener('pointermove', e=>{ if(!drag || e.pointerId !== drag.id) return; const p = toPx(e);
+        if(drag.rs){ it.w = Math.max(40, Math.round(Math.abs(p.x - it.x) * 2)); it.h = Math.max(20, Math.round(Math.abs(p.y - it.y) * 2)); }
+        else { let nx = p.x - drag.dx; if(Math.abs(nx - CARD_W/2) < 8) nx = CARD_W/2; it.x = Math.max(0, Math.min(CARD_W, Math.round(nx))); it.y = Math.max(0, Math.min(CARD_H, Math.round(p.y - drag.dy))); }
+        drawCardOnly(); });
+      const end = e=>{ if(!drag) return; drag = null; try{ el.releasePointerCapture(e.pointerId); }catch(x){} draw(); if(it.type === 'panel') drawProps(); };
+      el.addEventListener('pointerup', end); el.addEventListener('pointercancel', end);
+      el.addEventListener('keydown', e=>{ const k = { ArrowLeft:[-1,0], ArrowRight:[1,0], ArrowUp:[0,-1], ArrowDown:[0,1] }[e.key]; if(!k) return;
+        e.preventDefault(); const st = e.shiftKey ? 10 : 1; it.x += k[0]*st; it.y += k[1]*st; draw(); H.querySelector(`[data-id="${CSS.escape(it.id)}"]`)?.focus(); });
+    });
+  }
+  /* beim Ziehen nur Bild + Umrisse aktualisieren (flüssig) */
+  function drawCardOnly(){ boxes = drawCard(ctx, items, name, bg);
+    items.forEach(it=>{ const b = boxes[it.id], el = H.querySelector(`[data-id="${CSS.escape(it.id)}"]`); if(!b || !el) return;
+      el.style.left = b.x/CARD_W*100 + '%'; el.style.top = b.y/CARD_H*100 + '%'; el.style.width = b.w/CARD_W*100 + '%'; el.style.height = b.h/CARD_H*100 + '%'; });
+    const it = cur(); if(it) $('ce_pos').textContent = `${LBL[it.type]}: ${Math.round(it.x)} / ${Math.round(it.y)} Pixel (von 1200 × 630)`; }
+  function full(){ drawList(); drawProps(); draw(); }
+  const close = ()=> wrap.remove();
+  $('ce_x').addEventListener('click', close); $('ce_back').addEventListener('click', close);
+  $('ce_addBtn').addEventListener('click', ()=>{ const t = $('ce_add').value; const it = cardItem(t, t === 'frame' ? {} : { y:315 }); if(t === 'frame') items.unshift(it); else items.push(it); sel = it.id; full(); });
+  $('ce_reset').addEventListener('click', ()=>{ items = cardDefaultItems(); sel = items[1].id; full(); });
+  $('ce_save').addEventListener('click', async ()=>{ META.cardLayout = JSON.parse(JSON.stringify(items)); $('ce_status').textContent = 'Speichere für alle …';
+    try{ drawPeopleLinks(); }catch(e){} document.getElementById('m_cardPrev')?.click(); await publishUpdate($('ce_status')); });
+  const src = META.cardImg || META.bgImage;
+  const start = ()=> cardFontsReady(items).then(full);
+  if(src){ const im = new Image(); im.onload = ()=>{ bg = im; start(); }; im.onerror = start; im.src = src; } else start();
 }
 function copyText(text, btn){
   const ok = ()=>{ const o = btn.textContent; btn.textContent = '✓ Kopiert'; setTimeout(()=> btn.textContent = o, 1500); };
@@ -4097,8 +4307,13 @@ function openSettingsForm(){
       <label for="m_cardImg">Eigenes Bild für die WhatsApp-Karte (optional)</label>
       <input type="file" accept="image/*" id="m_cardImg">
       <div class="awImgRow"><img class="awThumb" id="m_cardImg_p" src="${META.cardImg||''}" style="${META.cardImg?'':'display:none'}; width:112px" alt=""><button type="button" class="pill awDel" id="m_cardImgDel" ${META.cardImg?'':'hidden'}>✕ Bild entfernen</button></div>
-      <label class="check"><input type="checkbox" id="m_cardText" ${META.cardText===false?'':'checked'}> Kalendername, Name und „Hier öffnen“ auf das Bild schreiben</label>
-      <p class="hint">ⓘ Querformat, ideal 1200 × 630 Pixel. Ohne eigenes Bild wird das Hintergrundbild des Kalenders genommen.</p>
+      <label class="check"><input type="checkbox" id="m_cardText" ${META.cardText===false?'':'checked'}> Titel, Name und „🎁 Zum Adventskalender“ auf das Bild schreiben</label>
+      <label for="m_cardTitle">Text oben auf der Karte (optional)</label>
+      <input type="text" id="m_cardTitle" value="${esc(META.cardTitle||'')}" placeholder="${esc(((META.icon ? META.icon + ' ' : '') + (META.title||'Adventskalender')).trim())}">
+      <p class="hint">ⓘ z. B. „Krimi-Adventskalender“. Leer = Kalender-Titel. Darunter steht automatisch „für Name“.</p>
+      <p class="hint">ⓘ Querformat, ideal 1200 × 630 Pixel. Ohne eigenes Bild wird das Hintergrundbild des Kalenders genommen. Das Bild bleibt in voller Helligkeit, die Schrift bekommt einen weichen Schatten.</p>
+      <div class="actions" style="margin:6px 0 0; flex-wrap:wrap"><button type="button" class="pill" id="m_cardPrev">👁 Karte ansehen</button><button type="button" class="pill primary" id="m_cardEdit">🎨 Karte gestalten</button></div>
+      <div id="m_cardPrevBox"></div>
       <div id="m_links"></div>
       <label for="m_bg" style="margin-top:14px">Hintergrundbild (optional)</label>
       <input type="file" accept="image/*" id="m_bg">
@@ -4122,9 +4337,19 @@ function openSettingsForm(){
   document.getElementById('m_typesNone').addEventListener('click', ()=> typeBoxes().forEach(b=> b.checked = false));
   ['m_people','m_linkBase'].forEach(id=> document.getElementById(id).addEventListener('input', drawPeopleLinks));
   document.getElementById('m_cardImg').addEventListener('change', e=>{ const f = e.target.files[0]; if(!f) return;
-    resizeImage(f, 1200, .85, url=>{ META.cardImg = url; const p = document.getElementById('m_cardImg_p'); p.src = url; p.style.display = ''; document.getElementById('m_cardImgDel').hidden = false; drawPeopleLinks(); }); });
-  document.getElementById('m_cardImgDel').addEventListener('click', e=>{ delete META.cardImg; document.getElementById('m_cardImg_p').style.display = 'none'; e.target.hidden = true; drawPeopleLinks(); });
-  document.getElementById('m_cardText').addEventListener('change', e=>{ META.cardText = e.target.checked; drawPeopleLinks(); });
+    resizeImage(f, 1200, .85, url=>{ META.cardImg = url; const p = document.getElementById('m_cardImg_p'); p.src = url; p.style.display = ''; document.getElementById('m_cardImgDel').hidden = false; drawPeopleLinks(); cardPrev(); }); });
+  document.getElementById('m_cardImgDel').addEventListener('click', e=>{ delete META.cardImg; document.getElementById('m_cardImg_p').style.display = 'none'; e.target.hidden = true; drawPeopleLinks(); cardPrev(); });
+  document.getElementById('m_cardText').addEventListener('change', e=>{ META.cardText = e.target.checked; drawPeopleLinks(); cardPrev(); });
+  /* Vorschau der WhatsApp-Karte – auch ohne eingetragene Namen */
+  let cardPrevOn = false;
+  const cardPrev = ()=>{ if(!cardPrevOn) return; const box = document.getElementById('m_cardPrevBox'); if(!box) return;
+    const nm = document.getElementById('m_people').value.split('\n').map(x=>x.trim()).filter(Boolean)[0] || personName() || 'Name';
+    linkCard(nm, url=>{ box.innerHTML = `<img src="${url}" alt="Vorschau WhatsApp-Karte" style="width:100%; border-radius:8px; margin-top:8px"><p class="hint">So sieht die Karte bei WhatsApp aus (Beispiel: ${esc(nm)}).</p>`; }); };
+  document.getElementById('m_cardTitle').addEventListener('input', e=>{ META.cardTitle = e.target.value.trim(); cardPrev(); });
+  document.getElementById('m_cardPrev').addEventListener('click', ()=>{ cardPrevOn = true; cardPrev(); });
+  document.getElementById('m_cardEdit').addEventListener('click', ()=>{
+    const nm = document.getElementById('m_people').value.split('\n').map(x=>x.trim()).filter(Boolean)[0] || personName() || 'Name';
+    META.cardTitle = document.getElementById('m_cardTitle').value.trim(); openCardEditor(nm); });
   drawPeopleLinks();
   document.getElementById('m_theme').addEventListener('change', e=>{
     const t = THEMES[e.target.value]; if(!t) return;
@@ -4165,6 +4390,7 @@ function openSettingsForm(){
     const tb = typeBoxes();
     if(tb.every(b=> b.checked)) delete META.types; else META.types = tb.filter(b=> b.checked).map(b=> b.dataset.type);
     META.people = document.getElementById('m_people').value.split('\n').map(x=>x.trim()).filter(Boolean);
+    META.cardTitle = document.getElementById('m_cardTitle').value.trim();
     META.linkBase = document.getElementById('m_linkBase').value.trim();
     render();
     const st = document.getElementById('m_status');
