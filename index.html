@@ -1,5 +1,4 @@
-<!DOCTYPE html>
-<html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<!DOCTYPE html><html lang="de"><head><meta charset="utf-8"><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
 <title>Adventskalender</title>
 <style id="appStyle">
 /* Layout: Türchen-Raster auf Tannengrün, Inhalte in hellen Karten; Rätsel-Werkzeuge im Karten-Stil */
@@ -312,6 +311,44 @@ header p{margin:8px 0 0; font-size:17px; text-shadow:0 1px 3px rgba(0,0,0,.35);}
 .certFoot span{border-bottom:1px solid #3b2a14; width:100%; padding-bottom:2px; min-height:26px; font-size:13px;}
 .certFoot small{font-size:11px; color:#6b4a17; margin-top:3px;}
 .certSig{font-family:'Brush Script MT','Segoe Script','Lucida Handwriting',cursive; font-size:19px !important; white-space:nowrap;}
+.certImg{position:relative; container-type:inline-size; width:100%; line-height:0; border-radius:6px; overflow:hidden; box-shadow:0 2px 10px rgba(0,0,0,.15); background:#fbf4e2;}
+.certImg > img{width:100%; height:auto; display:block; margin:0 !important; border-radius:0; pointer-events:none; user-select:none; -webkit-user-select:none;}
+.certScore{position:absolute; line-height:1; white-space:nowrap; pointer-events:none;}
+.cdWrap .certScore{pointer-events:auto; cursor:grab; outline:2px dashed rgba(33,150,243,.85); outline-offset:3px; border-radius:3px; touch-action:none;}
+.cdWrap .certScore:focus{outline-style:solid;}
+.cdWrap .certScore.drag{cursor:grabbing;}
+.cdWrap .certImg{cursor:crosshair; touch-action:none;}
+.cdGuide{position:absolute; top:0; bottom:0; left:50%; width:0; border-left:1px dashed rgba(33,150,243,.7); display:none; pointer-events:none;}
+.cdGuide.on{display:block;}
+.modal.wide{max-width:min(960px, 96vw);}
+.modal.certW{max-width:560px;}
+.cdGrid{display:grid; grid-template-columns:minmax(0,1.25fr) minmax(240px,1fr); gap:16px; align-items:start;}
+@media (max-width:720px){ .cdGrid{grid-template-columns:1fr;} }
+.cdTabs{display:flex; gap:6px; flex-wrap:wrap; margin:0 0 8px;}
+.cdTabs button{padding:5px 10px; font-size:12px;}
+.cdTabs button.on{background:var(--accent,#c9971c); color:#fff; border-color:transparent;}
+.cdAlign{display:flex; gap:6px;}
+.cdAlign button{flex:1; padding:6px 0;}
+.cdAlign button.on{background:var(--accent,#c9971c); color:#fff; border-color:transparent;}
+.cdPos{font-size:12px; color:#6b4a17; margin-top:6px;}
+.awCertRow{display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-top:6px;}
+.awCertRow > div{border:1px solid #eadfc8; border-radius:8px; padding:6px; background:#fffaf0; text-align:center; font-size:12px; color:#6b4a17;}
+.awCertRow img{width:100%; aspect-ratio:5/7; object-fit:cover; border-radius:4px; border:1px solid #ddd; margin:4px 0 !important; display:block; background:#f4efe3;}
+.awCertRow .ph{width:100%; aspect-ratio:5/7; border:1px dashed #cdb98e; border-radius:4px; margin:4px 0; display:flex; align-items:center; justify-content:center; font-size:22px; color:#cdb98e;}
+.awCertRow label.pill{display:block; font-size:11px; padding:4px 2px; margin:0; cursor:pointer;}
+.awCertRow .awDel{font-size:11px; padding:3px 4px; margin-top:4px;}
+@media (max-width:480px){ .awCertRow{grid-template-columns:repeat(2,1fr);} }
+.certPaper{width:100%; aspect-ratio:1/1.414; background:#fbf4e2 radial-gradient(ellipse at center, #fffaf0 40%, #f1e4c4 100%);}
+.certItem{position:absolute; line-height:1.15; white-space:pre; pointer-events:none;}
+.certItem.medal{line-height:0;}
+.certItem.medal svg, .certItem.medal img{width:100% !important; height:auto !important; display:block; margin:0 !important;}
+.cdWrap .certItem{pointer-events:auto; cursor:grab; touch-action:none; outline:1px dashed rgba(33,150,243,.45); outline-offset:2px; border-radius:3px;}
+.cdWrap .certItem.sel{outline:2px solid rgba(33,150,243,.95);}
+.cdWrap .certItem.drag{cursor:grabbing;}
+.cdList{display:flex; flex-direction:column; gap:4px; max-height:170px; overflow:auto; border:1px solid #eadfc8; border-radius:8px; padding:4px; background:#fffaf0;}
+.cdList button{text-align:left; padding:5px 8px; font-size:12px; border-radius:6px;}
+.cdList button.on{background:var(--accent,#c9971c); color:#fff; border-color:transparent;}
+.cdRow2{display:grid; grid-template-columns:1fr 1fr; gap:8px;}
 .certStamp{display:inline-block; margin:14px auto 0; transform:rotate(-7deg); border:3px solid rgba(179,38,30,.75); color:rgba(179,38,30,.8); padding:4px 10px; font:bold 13px/1.2 'Courier New',monospace; letter-spacing:2px; border-radius:6px; max-width:46%;}
 .forWho{display:inline-block; margin-top:8px; padding:3px 14px; border-radius:16px; background:rgba(0,0,0,.28); font-size:16px;}
 .typeChecks{display:grid; grid-template-columns:1fr; gap:8px; margin-top:6px;}
@@ -409,6 +446,9 @@ details.tool canvas{width:100%; height:auto; border:1px solid #ddd; border-radiu
   #printArea img{max-width:100%; max-height:92vh; display:block; margin:10px auto; page-break-inside:avoid;}
   #printArea .pCode{font-family:'Courier New',monospace; font-size:18px; letter-spacing:2px; border:1px dashed #999; padding:10px; white-space:pre-wrap;}
   #printArea .pLine{margin-top:28px;}
+  #printArea .certImg{box-shadow:none; -webkit-print-color-adjust:exact; print-color-adjust:exact; max-width:680px; margin:0 auto; border-radius:0;}
+  #printArea .certImg > img{max-height:none; margin:0 !important;}
+  #printArea .certPaper{-webkit-print-color-adjust:exact; print-color-adjust:exact;}
   #printArea .cert{box-shadow:none; -webkit-print-color-adjust:exact; print-color-adjust:exact; max-width:680px; margin:0 auto;}
   #printArea .pMm{display:grid; grid-template-columns:repeat(4,1fr); gap:0;}
   #printArea .pMm div{border:1px dashed #999; aspect-ratio:3/4; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:4px; text-align:center; page-break-inside:avoid;}
@@ -606,6 +646,9 @@ function openBigWord(){
 const AW_DEF = {
   on:false, recipient:'', caseName:'', extra:'', signer:'', place:'', title:'Urkunde', stamp:'FALL GELÖST',
   unlock:'door24', bg:'', progressOn:true, badgesOn:true,
+  mode:'standard',
+  layout:{ img:'', ar:0, items:null },
+  imgCert:{ imgs:['','','',''], ars:[0,0,0,0], score:{ x:50, y:75, size:6, font:'merri', color:'#a3161a', align:'center', bold:true, tpl:'{punkte} Punkte' } },
   ranks:[
     {icon:'🔍', name:'Meisterdetektivin', sub:'Goldene Lupe', min:85, img:''},
     {icon:'⭐', name:'Kriminalkommissarin', sub:'Silberne Marke', min:65, img:''},
@@ -624,6 +667,10 @@ function AW(){
   const a = Object.assign({}, AW_DEF, META.award || {});
   a.ranks = AW_DEF.ranks.map((r,i)=> Object.assign({}, r, (META.award?.ranks||[])[i] || {}));
   a.badges = AW_DEF.badges.map((b,i)=> Object.assign({}, b, (META.award?.badges||[])[i] || {}));
+  const ic = META.award?.imgCert || {};
+  a.imgCert = { imgs:[0,1,2,3].map(i=> (ic.imgs||[])[i] || ''), ars:[0,1,2,3].map(i=> +(ic.ars||[])[i] || 0), score:Object.assign({}, AW_DEF.imgCert.score, ic.score || {}) };
+  const lo = META.award?.layout || {};
+  a.layout = { img: lo.img || '', ar: +lo.ar || 0, items: Array.isArray(lo.items) ? lo.items.map(it=> Object.assign({}, it)) : layoutDefaultItems() };
   return a;
 }
 function awardStats(){
@@ -667,7 +714,103 @@ function medalHtml(a, i, size){
     <text x="50" y="80" text-anchor="middle" dominant-baseline="middle" font-size="30">${esc(R.icon||'')}</text></svg>`;
 }
 function badgeIcon(b, size){ return b.img ? `<img src="${b.img}" alt="" style="width:${size}px;height:${size}px;border-radius:50%;object-fit:cover">` : `<span style="font-size:${Math.round(size*.62)}px">${esc(b.icon||'🏅')}</span>`; }
+/* ---------- Variante 1: fertige Urkunde (Bild pro Rang) + dynamische Punktzahl ---------- */
+const CERT_FONTS = [
+  ['merri',   "'Merriweather', Georgia, serif",            'Merriweather (kräftig, klassisch)'],
+  ['georgia', "Georgia, 'Times New Roman', serif",         'Georgia (klassisch)'],
+  ['play',    "'Playfair Display', Georgia, serif",        'Playfair Display (elegant)'],
+  ['cinzel',  "'Cinzel', Georgia, serif",                  'Cinzel (edle Großbuchstaben)'],
+  ['times',   "'Times New Roman', Times, serif",           'Times New Roman'],
+  ['elite',   "'Special Elite', 'Courier New', monospace", 'Special Elite (Schreibmaschine)'],
+  ['courier', "'Courier New', Courier, monospace",         'Courier (Schreibmaschine schlicht)'],
+  ['vibes',   "'Great Vibes', 'Segoe Script', cursive",    'Great Vibes (Schreibschrift)'],
+  ['sans',    "Arial, Helvetica, sans-serif",              'Arial (ohne Serifen)']
+];
+function certFontCss(k){ return (CERT_FONTS.find(f=> f[0] === k) || CERT_FONTS[0])[1]; }
+let certFontsLoaded = false;
+function loadCertFonts(){
+  if(certFontsLoaded) return; certFontsLoaded = true;
+  try{ if(document.querySelector('link[data-certfonts]')) return; const l = document.createElement('link'); l.rel = 'stylesheet'; l.setAttribute('data-certfonts', '1');
+    l.href = 'https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700;900&family=Playfair+Display:wght@400;700&family=Cinzel:wght@400;700&family=Special+Elite&family=Great+Vibes&display=swap';
+    document.head.appendChild(l); }catch(e){}
+}
+function certImgFor(a, i){ const L = a.imgCert.imgs; return L[i] || L.find(Boolean) || ''; }
+function certImgActive(a){ return a.mode === 'bild' && a.imgCert.imgs.some(Boolean); }
+function certScoreText(sc, st){
+  return String(sc.tpl ?? '').replace(/\{punkte\}/gi, st.pts).replace(/\{max\}/gi, st.max).replace(/\{prozent\}/gi, st.pct).trim();
+}
+function certScoreStyle(sc){
+  const tx = sc.align === 'left' ? '0' : sc.align === 'center' ? '-50%' : '-100%';
+  return `left:${+sc.x}%; top:${+sc.y}%; transform:translate(${tx},-50%); font-family:${certFontCss(sc.font)}; font-size:${+sc.size}cqw; color:${sc.color || '#000'}; font-weight:${sc.bold ? 'bold' : 'normal'}; text-align:${sc.align || 'right'};`;
+}
+function certImgHtml(a, st, i, designer){
+  loadCertFonts();
+  const sc = a.imgCert.score, txt = certScoreText(sc, st);
+  /* leere Punktzahl-Vorlage: nichts über das fertige Bild legen */
+  const score = txt ? `<span class="certScore"${designer ? ' tabindex="0" title="Ziehen zum Verschieben, Pfeiltasten für Feinarbeit"' : ''} style="${esc(certScoreStyle(sc))}">${esc(txt)}</span>` : '';
+  return `<div class="certImg"><img src="${certImgFor(a, i)}" alt="Urkunde" draggable="false">${score}${designer ? '<div class="cdGuide"></div>' : ''}</div>`;
+}
+/* ---------- Variante 2: eigenes Layout mit frei platzierbaren Elementen ---------- */
+const LAYOUT_TYPES = {
+  title:  { label:'Überschrift',          text:'{titel}',            size:5, font:'cinzel',  bold:true },
+  lead:   { label:'Einleitung',           text:'Hiermit wird',       size:3.6, font:'georgia', italic:true },
+  name:   { label:'Name',                 text:'{name}',             size:7,   font:'merri',   bold:true },
+  lead2:  { label:'Überleitung',          text:'ausgezeichnet als',  size:3.6, font:'georgia', italic:true },
+  rank:   { label:'Rangbezeichnung',      text:'{rang}',             size:5.5, font:'play',    bold:true },
+  sub:    { label:'Rang-Untertitel',      text:'{untertitel}',       size:3.2, font:'georgia' },
+  medal:  { label:'Medaille',             w:22 },
+  score:  { label:'Punktzahl',            text:'{punkte} von {max} Punkten', size:4, font:'merri', bold:true },
+  case:   { label:'Fallname / Anlass',    text:'Fall: {fall}',       size:3.8, font:'play',    italic:true },
+  extra:  { label:'Zusatztext',           text:'{zusatz}',           size:3.2, font:'georgia', italic:true },
+  date:   { label:'Ort und Datum',        text:'{ort}, {datum}',     size:3,   font:'georgia' },
+  signer: { label:'Unterschrift',         text:'{unterschrift}',     size:4.5, font:'vibes' },
+  stamp:  { label:'Stempel-Text',         text:'{stempel}',          size:3.2, font:'courier', bold:true, color:'#b3261e' },
+  text:   { label:'Freier Text',          text:'Dein Text',          size:3.5, font:'georgia' }
+};
+let layoutSeq = 0;
+function layoutItem(type, o){ const T = LAYOUT_TYPES[type] || LAYOUT_TYPES.text;
+  return Object.assign({ id:'e' + Date.now().toString(36) + (layoutSeq++), type, text:T.text || '', x:50, y:50, size:T.size || 4, w:T.w || 0, font:T.font || 'georgia', color:T.color || '#3b2a14', align:'center', bold:!!T.bold, italic:!!T.italic }, o || {}); }
+function layoutDefaultItems(){ return [
+  layoutItem('title', {y:12}), layoutItem('lead', {y:22}), layoutItem('name', {y:29}), layoutItem('lead2', {y:36}),
+  layoutItem('medal', {y:49}), layoutItem('rank', {y:62}), layoutItem('sub', {y:67.5}), layoutItem('score', {y:75}),
+  layoutItem('date', {x:28, y:88}), layoutItem('signer', {x:72, y:88}) ]; }
+function layoutVars(a, st, i){
+  const R = a.ranks[i] || {};
+  return { name: (FUER || a.recipient || '').trim(), rang: R.name || '', untertitel: R.sub || '', punkte: String(st.pts), max: String(st.max), prozent: String(st.pct),
+    fall: a.caseName || '', zusatz: a.extra || '', titel: a.title || '', stempel: a.stamp || '', ort: a.place || '',
+    unterschrift: (a.signer || '').split(',')[0].trim(), rolle: ((a.signer || '').split(',').slice(1).join(',')).trim(),
+    datum: new Date().toLocaleDateString('de-DE', {day:'numeric', month:'long', year:'numeric'}) };
+}
+/* Text eines Elements: Platzhalter ersetzen. Leer, wenn nichts übrig bleibt ODER alle Platzhalter leer sind. */
+function layoutText(it, v){
+  const tpl = String(it.text ?? ''), keys = tpl.match(/\{([a-zäöü]+)\}/gi) || [];
+  let out = tpl.replace(/\{([a-zäöü]+)\}/gi, (m, k)=> (k.toLowerCase() in v) ? v[k.toLowerCase()] : m);
+  if(keys.length && keys.every(k=> !String(v[k.slice(1,-1).toLowerCase()] ?? '').trim())) return '';
+  out = out.replace(/^[\s,·–-]+|[\s,·–-]+$/g, '');
+  return out.trim();
+}
+function layoutItemStyle(it){
+  if(it.type === 'medal') return `left:${+it.x}%; top:${+it.y}%; width:${+it.w || 20}%; transform:translate(-50%,-50%);`;
+  const tx = it.align === 'left' ? '0' : it.align === 'right' ? '-100%' : '-50%';
+  return `left:${+it.x}%; top:${+it.y}%; transform:translate(${tx},-50%); font-family:${certFontCss(it.font)}; font-size:${+it.size}cqw; color:${it.color || '#3b2a14'}; font-weight:${it.bold ? 'bold' : 'normal'}; font-style:${it.italic ? 'italic' : 'normal'}; text-align:${it.align || 'center'};`;
+}
+function certLayoutHtml(a, st, i, designer, selId){
+  loadCertFonts();
+  const L = a.layout, v = layoutVars(a, st, i);
+  const items = (L.items || []).map(it=>{
+    const sel = designer && it.id === selId ? ' sel' : '', attr = designer ? ` data-id="${esc(it.id)}" tabindex="0"` : '';
+    if(it.type === 'medal') return `<div class="certItem medal${sel}"${attr} style="${esc(layoutItemStyle(it))}">${medalHtml(a, i, 100)}</div>`;
+    let t = layoutText(it, v);
+    if(!t && designer && it.id === selId) t = '‹leer – wird nicht angezeigt›';
+    if(!t) return '';   /* leere Felder werden nicht über das Layout gelegt */
+    return `<div class="certItem${sel}"${attr} style="${esc(layoutItemStyle(it))}">${esc(t)}</div>`;
+  }).join('');
+  const bg = L.img ? `<img src="${L.img}" alt="Urkunde" draggable="false">` : `<div class="certPaper"></div>`;
+  return `<div class="certImg">${bg}${items}${designer ? '<div class="cdGuide"></div>' : ''}</div>`;
+}
 function certHtml(a, st, i){
+  if(a.mode === 'layout') return certLayoutHtml(a, st, i);
+  if(certImgActive(a)) return certImgHtml(a, st, i);
   const R = a.ranks[i], accent = (THEMES[META.theme] || THEMES.klassisch).bg1;
   const date = new Date().toLocaleDateString('de-DE', {day:'numeric', month:'long', year:'numeric'});
   const bg = a.bg ? ` style="--cAcc:${accent}; background-image:linear-gradient(rgba(255,252,243,.84),rgba(255,252,243,.84)),url('${a.bg}')"` : ` style="--cAcc:${accent}"`;
@@ -721,6 +864,7 @@ function updateAwardBtn(){
 }
 function openAwardPanel(){
   const a = AW(), st = awardStats(), unl = awardUnlocked(a);
+  modal.classList.remove('wide','certW');
   const pct = st.total ? Math.round(st.solved / st.total * 100) : 0;
   modalContent.innerHTML = `<h2>🏅 Deine Ermittlung</h2>
     ${a.progressOn ? `<div class="awProg"><div class="awBar"><span style="width:${pct}%"></span></div>
@@ -740,6 +884,7 @@ function openAwardPanel(){
 }
 function openCertificate(previewRank){
   const a = AW(), st = awardStats(), i = previewRank ?? awardRank(a, st);
+  modal.classList.remove('wide'); modal.classList.toggle('certW', certImgActive(a) || a.mode === 'layout');
   modalContent.innerHTML = certHtml(a, st, i) + `<div class="actions" style="justify-content:center">
     <button type="button" class="pill" id="awPrint">🖨 Drucken / als PDF</button>
     <button type="button" class="pill" id="awBack">← Zurück</button></div>`;
@@ -755,6 +900,7 @@ function openCertificate(previewRank){
 /* Editor: Urkunde & Abzeichen einrichten */
 function openAwardForm(){
   const a = AW();
+  modal.classList.remove('wide','certW');
   const imgRow = (id, src, label) => `<label for="${id}">${label}</label><input type="file" accept="image/*" id="${id}">
     <div class="awImgRow"><img class="awThumb" id="${id}_p" src="${src||''}" style="${src?'':'display:none'}" alt=""><button type="button" class="pill awDel" data-img="${id}" ${src?'':'hidden'}>✕ Bild entfernen</button></div>`;
   modalContent.innerHTML = `<h2>🏅 Urkunde & Abzeichen einrichten</h2>
@@ -763,6 +909,26 @@ function openAwardForm(){
       <p class="hint">ⓘ Am Ende bekommt die Empfängerin eine Urkunde mit Rang und Medaille. Der Rang richtet sich nach den Punkten: 3 = ohne Hilfe gelöst, 2 = mit Tipps, 1 = erst nach dem Aufdecken, 0 = nur aufgedeckt. Bonus: +1 bei „Wer bin ich?“ mit höchstens 2 Hinweisen, +5 für das große Lösungswort.</p>
 
       <h3 class="formSec">📜 Urkunde</h3>
+      <label for="aw_mode">Art der Urkunde</label>
+      <select id="aw_mode"><option value="standard">Standard-Urkunde (Texte werden automatisch gesetzt)</option><option value="bild">Fertige Urkunde pro Rang + Punktzahl</option><option value="layout">Eigenes Layout (Elemente frei platzieren)</option></select>
+      <div id="aw_bildBox">
+        <p class="hint">ⓘ Lade für jeden Rang deine fertig gestaltete Urkunde hoch (hochkant, ideal ca. 1414 × 2000 Pixel, mindestens 1000 × 1400). Über das Bild wird nur die erreichte Punktzahl gesetzt. Fehlt das Bild für einen Rang, wird das erste vorhandene genommen.</p>
+        <div class="awCertRow">${[0,1,2,3].map(i=>`<div><b>Rang ${i+1}</b>
+          ${a.imgCert.imgs[i] ? `<img id="aw_c${i}_p" src="${a.imgCert.imgs[i]}" alt="">` : `<img id="aw_c${i}_p" alt="" style="display:none"><div class="ph" id="aw_c${i}_ph">📜</div>`}
+          <label class="pill">📁 Bild wählen<input type="file" accept="image/*" id="aw_c${i}" hidden></label>
+          <button type="button" class="pill awDel" data-cimg="${i}" ${a.imgCert.imgs[i]?'':'hidden'}>✕ entfernen</button></div>`).join('')}</div>
+        <button type="button" class="pill primary" id="aw_design" style="margin-top:10px">🎨 Punktzahl platzieren und gestalten</button>
+        <p class="hint" id="aw_bildMsg"></p>
+      </div>
+      <div id="aw_layBox">
+        <p class="hint">ⓘ Lade ein Grundlayout hoch (z. B. Rahmen, Papier, Verzierungen – ohne Texte). Name, Rang, Medaille, Punktzahl und eigene Texte setzt du danach frei darauf. Ohne Bild wird ein Papier-Hintergrund genommen. Ideal: hochkant, ca. 1414 × 2000 Pixel.</p>
+        <div class="awImgRow"><img class="awThumb" id="aw_lay_p" src="${a.layout.img||''}" style="${a.layout.img?'':'display:none'}; object-fit:cover" alt="">
+          <label class="pill">📁 Grundlayout wählen<input type="file" accept="image/*" id="aw_lay" hidden></label>
+          <button type="button" class="pill awDel" id="aw_layDel" ${a.layout.img?'':'hidden'}>✕ entfernen</button></div>
+        <button type="button" class="pill primary" id="aw_layDesign" style="margin-top:10px">🎨 Urkunde gestalten (Elemente platzieren)</button>
+        <p class="hint">ⓘ Die Angaben unten (Name, Fall, Unterschrift, Ort …) füllen die Platzhalter {name}, {fall}, {unterschrift}, {ort} usw. Leere Angaben erscheinen nicht auf der Urkunde.</p>
+      </div>
+      <div id="aw_stdBox">
       <label for="aw_recipient">Name der Empfängerin / des Empfängers</label>
       <input type="text" id="aw_recipient" value="${esc(a.recipient)}" placeholder="z. B. Anna Muster">
       <label for="aw_case">Name des Falls / Anlass (optional)</label>
@@ -777,10 +943,14 @@ function openAwardForm(){
       <input type="text" id="aw_title" value="${esc(a.title)}" placeholder="z. B. Urkunde · Ehrenurkunde · Diplom · Auszeichnung">
       <label for="aw_stamp">Stempel-Aufdruck (leer = kein Stempel)</label>
       <input type="text" id="aw_stamp" value="${esc(a.stamp)}" placeholder="z. B. FALL GELÖST · AKTE GESCHLOSSEN · FROHE WEIHNACHTEN">
-      <label for="aw_unlock">Wann gibt es die Urkunde?</label>
-      <select id="aw_unlock"><option value="door24">am 24., sobald Türchen 24 gelöst ist</option><option value="all">am 24., sobald alle Rätsel erledigt sind</option></select>
+      <div id="aw_stdBgBox">
       ${imgRow('aw_bg', a.bg, 'Eigenes Hintergrundbild für die Urkunde (optional)')}
       <p class="hint">ⓘ Ideal: hochkant, ca. 1000 × 1400 Pixel, ruhiges Motiv (z. B. Sterne, Tannenzweige, Papier). Wird leicht aufgehellt, damit der Text lesbar bleibt. Ohne Bild: eingebautes Papier-Design.</p>
+      </div>
+      </div>
+
+      <label for="aw_unlock">Wann gibt es die Urkunde?</label>
+      <select id="aw_unlock"><option value="door24">am 24., sobald Türchen 24 gelöst ist</option><option value="all">am 24., sobald alle Rätsel erledigt sind</option></select>
 
       <h3 class="formSec">🎖️ Ränge</h3>
       <p class="hint">ⓘ Prozent der möglichen Punkte, ab denen der Rang vergeben wird. Der letzte Rang gilt für alle anderen. Ohne eigenes Bild wird eine Medaille (Gold, Silber, Bronze, Papier) mit dem Symbol gezeichnet.</p>
@@ -811,6 +981,26 @@ function openAwardForm(){
   overlay.classList.add('show'); modal.scrollTop = 0;
   const $ = id => document.getElementById(id);
   $('aw_unlock').value = a.unlock;
+  $('aw_mode').value = ['bild','layout'].includes(a.mode) ? a.mode : 'standard';
+  let layImg = a.layout.img, layAr = a.layout.ar;
+  const cimgs = a.imgCert.imgs.slice(), cars = a.imgCert.ars.slice();
+  const modeUI = ()=>{ const md = $('aw_mode').value, b = md === 'bild'; $('aw_bildBox').hidden = !b; $('aw_stdBox').hidden = b;
+    $('aw_layBox').hidden = md !== 'layout'; $('aw_stdBgBox').hidden = md === 'layout';
+    $('aw_bildMsg').textContent = b && !cimgs.some(Boolean) ? 'Noch keine Urkunde hochgeladen – solange wird die Standard-Urkunde gezeigt.' : ''; };
+  $('aw_mode').addEventListener('change', modeUI); modeUI();
+  $('aw_lay').addEventListener('change', e=>{ const f = e.target.files[0]; if(!f) return;
+    resizeImage(f, 2000, .85, url=>{ const im = new Image(); im.onload = ()=>{ layImg = url; layAr = Math.round(im.width / im.height * 1000) / 1000; const p = $('aw_lay_p'); p.src = url; p.style.display = ''; $('aw_layDel').hidden = false; }; im.src = url; }); });
+  $('aw_layDel').addEventListener('click', ()=>{ layImg = ''; layAr = 0; $('aw_lay_p').style.display = 'none'; $('aw_lay').value = ''; $('aw_layDel').hidden = true; });
+  [0,1,2,3].forEach(i=>{
+    $('aw_c'+i).addEventListener('change', e=>{
+      const f = e.target.files[0]; if(!f) return;
+      $('aw_bildMsg').textContent = 'Bild wird vorbereitet …';
+      resizeImage(f, 2000, .85, url=>{ const im = new Image(); im.onload = ()=>{ cimgs[i] = url; cars[i] = Math.round(im.width / im.height * 1000) / 1000;
+        const p = $('aw_c'+i+'_p'); p.src = url; p.style.display = ''; $('aw_c'+i+'_ph')?.remove();
+        modalContent.querySelector(`[data-cimg="${i}"]`).hidden = false; modeUI(); }; im.src = url; });
+    });
+  });
+  modalContent.querySelectorAll('[data-cimg]').forEach(b=> b.addEventListener('click', ()=>{ const i = +b.dataset.cimg; cimgs[i] = ''; cars[i] = 0; const p = $('aw_c'+i+'_p'); p.style.display = 'none'; p.removeAttribute('src'); $('aw_c'+i).value = ''; b.hidden = true; modeUI(); }));
   const imgs = { aw_bg:a.bg };
   a.ranks.forEach((r,i)=> imgs['aw_r'+i+'_img'] = r.img);
   a.badges.forEach((b,i)=> imgs['aw_b'+i+'_img'] = b.img);
@@ -825,10 +1015,16 @@ function openAwardForm(){
     on:$('aw_on').checked, recipient:$('aw_recipient').value.trim(), caseName:$('aw_case').value.trim(), extra:$('aw_extra').value.trim(),
     signer:$('aw_signer').value.trim(), place:$('aw_place').value.trim(), title:$('aw_title').value.trim(), stamp:$('aw_stamp').value.trim(),
     unlock:$('aw_unlock').value, bg:imgs.aw_bg, progressOn:$('aw_prog').checked, badgesOn:$('aw_badges').checked,
+    mode:$('aw_mode').value, layout:{ img:layImg, ar:layAr, items:((META.award?.layout?.items) || a.layout.items).map(it=> Object.assign({}, it)) }, imgCert:{ imgs:cimgs.slice(), ars:cars.slice(), score:Object.assign({}, (META.award?.imgCert?.score) || a.imgCert.score) },
     ranks:a.ranks.map((r,i)=>({icon:$('aw_r'+i+'_icon').value.trim(), name:$('aw_r'+i+'_name').value.trim(), sub:$('aw_r'+i+'_sub').value.trim(), min: i<3 ? Math.max(0, Math.min(100, +$('aw_r'+i+'_min').value || 0)) : 0, img:imgs['aw_r'+i+'_img']})),
     badges:a.badges.map((b,i)=>({icon:$('aw_b'+i+'_icon').value.trim(), name:$('aw_b'+i+'_name').value.trim(), at: Math.max(0, +$('aw_b'+i+'_at').value || 0), img:imgs['aw_b'+i+'_img']}))
   });
   modalContent.querySelectorAll('[data-prev]').forEach(b=> b.addEventListener('click', ()=>{ META.award = collect(); openCertificate(+b.dataset.prev); }));
+  $('aw_design').addEventListener('click', ()=>{
+    if(!cimgs.some(Boolean)){ $('aw_bildMsg').textContent = 'Bitte zuerst mindestens eine Urkunde hochladen.'; return; }
+    META.award = collect(); openCertDesigner(Math.max(0, cimgs.findIndex(Boolean)));
+  });
+  $('aw_layDesign').addEventListener('click', ()=>{ META.award = collect(); openLayoutDesigner(0); });
   $('aw_save').addEventListener('click', async ()=>{
     const v = collect();
     if(!(v.ranks[0].min >= v.ranks[1].min && v.ranks[1].min >= v.ranks[2].min)){ $('aw_status').textContent = 'Die Prozentwerte müssen von Rang 1 nach Rang 3 kleiner werden (z. B. 85 – 65 – 40).'; return; }
@@ -836,6 +1032,198 @@ function openAwardForm(){
     $('aw_status').textContent = 'Speichere für alle …';
     await publishUpdate($('aw_status'));
   });
+}
+
+/* Gestaltungs-Editor: Punktzahl auf der fertigen Urkunde platzieren */
+function openCertDesigner(rank){
+  const a = AW(), sc = Object.assign({}, a.imgCert.score);
+  const st0 = awardStats();
+  let rk = rank || 0, sample = { pts: Math.max(1, Math.round(st0.max * 0.9)) || 87, max: st0.max || 96 };
+  sample.pct = sample.max ? Math.round(sample.pts / sample.max * 100) : 90;
+  modal.classList.remove('certW'); modal.classList.add('wide');
+  modalContent.innerHTML = `<h2>🎨 Punktzahl platzieren</h2>
+    <p class="hint" style="margin-top:0">ⓘ Zieh die Beispielzahl mit der Maus (oder dem Finger) an ihren Platz oder klick auf die gewünschte Stelle. Mit den Pfeiltasten geht es ganz genau. Die Position gilt für alle Ränge.</p>
+    <div class="cdGrid">
+      <div class="cdWrap">
+        <div class="cdTabs">${[0,1,2,3].map(i=>`<button type="button" class="pill${i===rk?' on':''}" data-rk="${i}" ${a.imgCert.imgs[i]?'':'title="Kein eigenes Bild – es wird das erste Bild gezeigt"'}>Rang ${i+1}${a.imgCert.imgs[i]?'':' ·'}</button>`).join('')}</div>
+        <div id="cd_cert"></div>
+        <p class="cdPos" id="cd_pos"></p>
+      </div>
+      <div class="editForm" style="margin:0">
+        <label for="cd_tpl">Was soll dort stehen?</label>
+        <input type="text" id="cd_tpl" value="${esc(sc.tpl)}" placeholder="{punkte}">
+        <p class="hint">ⓘ Platzhalter: {punkte} = erreichte Punkte, {max} = mögliche Punkte, {prozent} = Prozent. Steht „Punkte“ schon im Bild, reicht {punkte}.</p>
+        <label for="cd_sample">Beispielzahl für die Vorschau</label>
+        <input type="number" id="cd_sample" min="0" value="${sample.pts}">
+        <label for="cd_font">Schriftart</label>
+        <select id="cd_font">${CERT_FONTS.map(f=>`<option value="${f[0]}" style="font-family:${esc(f[1])}">${esc(f[2])}</option>`).join('')}</select>
+        <label for="cd_size">Schriftgröße: <b id="cd_sizeV"></b></label>
+        <input type="range" id="cd_size" min="1.5" max="20" step="0.1" value="${+sc.size}">
+        <label for="cd_color">Schriftfarbe</label>
+        <input type="color" id="cd_color" value="${esc(sc.color || '#a3161a')}" style="width:100%; height:38px; padding:2px">
+        <label class="check"><input type="checkbox" id="cd_bold" ${sc.bold?'checked':''}> Fett</label>
+        <label>Ausrichtung am Ankerpunkt</label>
+        <div class="cdAlign">${[['left','⬅ links'],['center','↔ Mitte'],['right','rechts ➡']].map(([k,l])=>`<button type="button" class="pill${sc.align===k?' on':''}" data-al="${k}">${l}</button>`).join('')}</div>
+        <p class="hint">ⓘ „rechts“: die Zahl endet immer an derselben Stelle – ideal direkt vor dem Wort „Punkte“. „Mitte“: für einen leeren Kasten.</p>
+        <div class="actions" style="margin-top:12px; flex-wrap:wrap">
+          <button type="button" class="saveBtn" id="cd_save">Speichern</button>
+          <button type="button" class="pill" id="cd_back">← Zurück ohne Speichern</button>
+        </div>
+        <p id="cd_status" style="font-size:12px; color:#888; margin-top:8px;"></p>
+      </div>
+    </div>`;
+  overlay.classList.add('show'); modal.scrollTop = 0;
+  const $ = id => document.getElementById(id), box = $('cd_cert');
+  $('cd_font').value = CERT_FONTS.some(f=> f[0] === sc.font) ? sc.font : CERT_FONTS[0][0];
+  const clamp = v => Math.max(0, Math.min(100, Math.round(v * 10) / 10));
+  const draw = ()=>{
+    const aa = Object.assign({}, a, { imgCert: Object.assign({}, a.imgCert, { score: sc }) });
+    const tpl = sc.tpl.trim() ? sc : Object.assign({}, sc, { tpl:'{punkte}' });   // im Editor immer etwas zum Anfassen zeigen
+    aa.imgCert.score = tpl;
+    box.innerHTML = certImgHtml(aa, sample, rk, true);
+    $('cd_sizeV').textContent = (+sc.size).toFixed(1);
+    $('cd_pos').textContent = `Position: ${(+sc.x).toFixed(1)} % von links · ${(+sc.y).toFixed(1)} % von oben${sc.tpl.trim() ? '' : ' · ⚠️ Vorlage leer: auf der echten Urkunde erscheint dann keine Zahl'}`;
+    bindDrag();
+  };
+  const upd = ()=>{ const el = box.querySelector('.certScore'); if(!el) return draw();
+    el.setAttribute('style', certScoreStyle(sc)); $('cd_pos').textContent = `Position: ${(+sc.x).toFixed(1)} % von links · ${(+sc.y).toFixed(1)} % von oben`; };
+  function bindDrag(){
+    const wrap = box.querySelector('.certImg'), el = box.querySelector('.certScore'), guide = box.querySelector('.cdGuide');
+    let drag = null;
+    const toPct = e => { const r = wrap.getBoundingClientRect(); return { x:(e.clientX - r.left) / r.width * 100, y:(e.clientY - r.top) / r.height * 100 }; };
+    el.addEventListener('pointerdown', e=>{ e.preventDefault(); e.stopPropagation(); const p = toPct(e); drag = { dx:p.x - sc.x, dy:p.y - sc.y, id:e.pointerId }; el.setPointerCapture(e.pointerId); el.classList.add('drag'); el.focus({preventScroll:true}); });
+    el.addEventListener('pointermove', e=>{ if(!drag || e.pointerId !== drag.id) return; const p = toPct(e);
+      let nx = clamp(p.x - drag.dx); const snap = Math.abs(nx - 50) < 1 && sc.align === 'center'; if(snap) nx = 50;
+      guide.classList.toggle('on', snap || Math.abs(nx - 50) < 0.05);
+      sc.x = nx; sc.y = clamp(p.y - drag.dy); upd(); });
+    const end = e=>{ if(!drag) return; drag = null; el.classList.remove('drag'); guide.classList.remove('on'); try{ el.releasePointerCapture(e.pointerId); }catch(x){} };
+    el.addEventListener('pointerup', end); el.addEventListener('pointercancel', end);
+    wrap.addEventListener('pointerdown', e=>{ if(e.target === el) return; const p = toPct(e); sc.x = clamp(p.x); sc.y = clamp(p.y); upd(); });
+    el.addEventListener('keydown', e=>{
+      const k = { ArrowLeft:[-1,0], ArrowRight:[1,0], ArrowUp:[0,-1], ArrowDown:[0,1] }[e.key]; if(!k) return;
+      e.preventDefault(); const s = e.shiftKey ? 2 : 0.2; sc.x = clamp(sc.x + k[0]*s); sc.y = clamp(sc.y + k[1]*s); upd(); });
+  }
+  modalContent.querySelectorAll('[data-rk]').forEach(b=> b.addEventListener('click', ()=>{ rk = +b.dataset.rk; modalContent.querySelectorAll('[data-rk]').forEach(x=> x.classList.toggle('on', x === b)); draw(); }));
+  modalContent.querySelectorAll('[data-al]').forEach(b=> b.addEventListener('click', ()=>{ sc.align = b.dataset.al; modalContent.querySelectorAll('[data-al]').forEach(x=> x.classList.toggle('on', x === b)); upd(); }));
+  $('cd_tpl').addEventListener('input', e=>{ sc.tpl = e.target.value; draw(); });
+  $('cd_sample').addEventListener('input', e=>{ sample.pts = Math.max(0, +e.target.value || 0); sample.pct = sample.max ? Math.round(sample.pts / sample.max * 100) : 0; draw(); });
+  $('cd_font').addEventListener('change', e=>{ sc.font = e.target.value; upd(); });
+  $('cd_size').addEventListener('input', e=>{ sc.size = +e.target.value; $('cd_sizeV').textContent = sc.size.toFixed(1); upd(); });
+  $('cd_color').addEventListener('input', e=>{ sc.color = e.target.value; upd(); });
+  $('cd_bold').addEventListener('change', e=>{ sc.bold = e.target.checked; upd(); });
+  $('cd_back').addEventListener('click', ()=> openAwardForm());
+  $('cd_save').addEventListener('click', async ()=>{
+    META.award = Object.assign({}, META.award || {}, { imgCert: Object.assign({}, a.imgCert, { score: Object.assign({}, sc, { tpl: sc.tpl.trim() }) }) });
+    render(); buildToolbar(); updateAkteBtn();
+    $('cd_status').textContent = 'Speichere für alle …';
+    await publishUpdate($('cd_status'));
+  });
+  draw();
+}
+
+/* Gestaltungs-Editor für Variante 2 */
+function openLayoutDesigner(rank){
+  const a = AW(), L = { img:a.layout.img, ar:a.layout.ar, items:a.layout.items.map(it=> Object.assign({}, it)) };
+  const st0 = awardStats();
+  let rk = rank || 0, sel = (L.items[0] || {}).id || null;
+  const sample = { pts: Math.max(1, Math.round((st0.max || 96) * 0.9)), max: st0.max || 96 }; sample.pct = Math.round(sample.pts / sample.max * 100);
+  modal.classList.remove('certW'); modal.classList.add('wide');
+  modalContent.innerHTML = `<h2>🎨 Urkunde gestalten</h2>
+    <p class="hint" style="margin-top:0">ⓘ Element anklicken und mit der Maus (oder dem Finger) verschieben. Pfeiltasten = fein, mit Umschalt = größere Schritte. Rechts stellst du Text, Schrift, Größe und Farbe ein.</p>
+    <div class="cdGrid">
+      <div class="cdWrap">
+        <div class="cdTabs">${[0,1,2,3].map(i=>`<button type="button" class="pill${i===rk?' on':''}" data-rk="${i}">Rang ${i+1}</button>`).join('')}</div>
+        <div id="cd_cert"></div>
+        <p class="cdPos" id="cd_pos"></p>
+      </div>
+      <div class="editForm" style="margin:0">
+        <label>Elemente</label>
+        <div class="cdList" id="cd_list"></div>
+        <div class="cdRow2" style="margin-top:6px">
+          <select id="cd_addType">${Object.entries(LAYOUT_TYPES).map(([k,t])=>`<option value="${k}">${esc(t.label)}</option>`).join('')}</select>
+          <button type="button" class="pill" id="cd_add">➕ hinzufügen</button>
+        </div>
+        <div id="cd_props"></div>
+        <div class="actions" style="margin-top:12px; flex-wrap:wrap">
+          <button type="button" class="saveBtn" id="cd_save">Speichern</button>
+          <button type="button" class="pill" id="cd_back">← Zurück ohne Speichern</button>
+          <button type="button" class="pill" id="cd_reset" title="Alle Elemente auf den Vorschlag zurücksetzen">↺ Vorschlag</button>
+        </div>
+        <p id="cd_status" style="font-size:12px; color:#888; margin-top:8px;"></p>
+      </div>
+    </div>`;
+  overlay.classList.add('show'); modal.scrollTop = 0;
+  const $ = id => document.getElementById(id), box = $('cd_cert');
+  const clamp = v => Math.max(0, Math.min(100, Math.round(v * 10) / 10));
+  const cur = ()=> L.items.find(it=> it.id === sel);
+  const aa = ()=> Object.assign({}, a, { layout: L });
+  const label = it => (LAYOUT_TYPES[it.type] || LAYOUT_TYPES.text).label + (it.type === 'text' || it.type === 'lead' || it.type === 'lead2' ? ': ' + String(it.text || '').slice(0, 18) : '');
+  const drawList = ()=>{ $('cd_list').innerHTML = L.items.map(it=>`<button type="button" class="pill${it.id===sel?' on':''}" data-sel="${esc(it.id)}">${esc(label(it))}${it.type !== 'medal' && !layoutText(it, layoutVars(a, sample, rk)) ? ' · <i>leer</i>' : ''}</button>`).join('') || '<small>Noch keine Elemente.</small>';
+    $('cd_list').querySelectorAll('[data-sel]').forEach(b=> b.addEventListener('click', ()=>{ sel = b.dataset.sel; full(); })); };
+  const drawProps = ()=>{
+    const it = cur(), P = $('cd_props');
+    if(!it){ P.innerHTML = '<p class="hint">Wähle ein Element aus oder füge eines hinzu.</p>'; return; }
+    if(it.type === 'medal'){
+      P.innerHTML = `<label for="cd_w">Größe der Medaille: <b id="cd_wV">${(+it.w).toFixed(0)} %</b></label><input type="range" id="cd_w" min="5" max="60" step="1" value="${+it.w}">
+        <p class="hint">ⓘ Die Medaille passt sich dem Rang an (eigenes Medaillenbild aus „Ränge“ oder die gezeichnete Medaille).</p>
+        <button type="button" class="pill dangerBtn" id="cd_del" style="margin-top:8px">🗑 Element entfernen</button>`;
+      $('cd_w').addEventListener('input', e=>{ it.w = +e.target.value; $('cd_wV').textContent = it.w + ' %'; upd(); });
+    } else {
+      P.innerHTML = `<label for="cd_text">Text</label><textarea id="cd_text" rows="2">${esc(it.text)}</textarea>
+        <p class="hint">ⓘ Platzhalter: {name} {rang} {untertitel} {punkte} {max} {prozent} {fall} {zusatz} {titel} {datum} {ort} {unterschrift} {rolle} {stempel}. Sind alle Platzhalter eines Elements leer, erscheint es nicht.</p>
+        <label for="cd_font">Schriftart</label>
+        <select id="cd_font">${CERT_FONTS.map(f=>`<option value="${f[0]}" style="font-family:${esc(f[1])}">${esc(f[2])}</option>`).join('')}</select>
+        <label for="cd_size">Schriftgröße: <b id="cd_sizeV">${(+it.size).toFixed(1)}</b></label>
+        <input type="range" id="cd_size" min="1.5" max="20" step="0.1" value="${+it.size}">
+        <div class="cdRow2"><div><label for="cd_color">Farbe</label><input type="color" id="cd_color" value="${esc(it.color || '#3b2a14')}" style="width:100%; height:36px; padding:2px"></div>
+          <div><label>&nbsp;</label><label class="check" style="margin:0"><input type="checkbox" id="cd_bold" ${it.bold?'checked':''}> Fett</label><label class="check" style="margin:0"><input type="checkbox" id="cd_it" ${it.italic?'checked':''}> Kursiv</label></div></div>
+        <label>Ausrichtung</label>
+        <div class="cdAlign">${[['left','⬅ links'],['center','↔ Mitte'],['right','rechts ➡']].map(([k,l])=>`<button type="button" class="pill${it.align===k?' on':''}" data-al="${k}">${l}</button>`).join('')}</div>
+        <div class="actions" style="margin-top:8px; flex-wrap:wrap"><button type="button" class="pill" id="cd_center">↔ waagerecht mittig</button><button type="button" class="pill dangerBtn" id="cd_del">🗑 entfernen</button></div>`;
+      $('cd_font').value = CERT_FONTS.some(f=> f[0] === it.font) ? it.font : CERT_FONTS[0][0];
+      $('cd_text').addEventListener('input', e=>{ it.text = e.target.value; draw(); drawList(); });
+      $('cd_font').addEventListener('change', e=>{ it.font = e.target.value; upd(); });
+      $('cd_size').addEventListener('input', e=>{ it.size = +e.target.value; $('cd_sizeV').textContent = it.size.toFixed(1); upd(); });
+      $('cd_color').addEventListener('input', e=>{ it.color = e.target.value; upd(); });
+      $('cd_bold').addEventListener('change', e=>{ it.bold = e.target.checked; upd(); });
+      $('cd_it').addEventListener('change', e=>{ it.italic = e.target.checked; upd(); });
+      P.querySelectorAll('[data-al]').forEach(b=> b.addEventListener('click', ()=>{ it.align = b.dataset.al; P.querySelectorAll('[data-al]').forEach(x=> x.classList.toggle('on', x === b)); upd(); }));
+      $('cd_center').addEventListener('click', ()=>{ it.align = 'center'; it.x = 50; drawProps(); upd(); });
+    }
+    $('cd_del').addEventListener('click', ()=>{ L.items = L.items.filter(x=> x.id !== it.id); sel = (L.items[0] || {}).id || null; full(); });
+  };
+  const posText = ()=>{ const it = cur(); $('cd_pos').textContent = it ? `${(LAYOUT_TYPES[it.type]||{}).label || ''}: ${(+it.x).toFixed(1)} % von links · ${(+it.y).toFixed(1)} % von oben` : ''; };
+  const upd = ()=>{ const it = cur(); const el = it && box.querySelector(`[data-id="${CSS.escape(it.id)}"]`); if(!el) return draw(); el.setAttribute('style', layoutItemStyle(it)); posText(); };
+  function draw(){
+    box.innerHTML = certLayoutHtml(aa(), sample, rk, true, sel); posText();
+    const wrap = box.querySelector('.certImg'), guide = box.querySelector('.cdGuide');
+    const toPct = e => { const r = wrap.getBoundingClientRect(); return { x:(e.clientX - r.left) / r.width * 100, y:(e.clientY - r.top) / r.height * 100 }; };
+    box.querySelectorAll('.certItem').forEach(el=>{
+      const it = L.items.find(x=> x.id === el.dataset.id); let drag = null;
+      el.addEventListener('pointerdown', e=>{ e.preventDefault(); e.stopPropagation();
+        if(sel !== it.id){ sel = it.id; drawList(); drawProps(); box.querySelectorAll('.certItem').forEach(x=> x.classList.toggle('sel', x === el)); }
+        const p = toPct(e); drag = { dx:p.x - it.x, dy:p.y - it.y, id:e.pointerId }; el.setPointerCapture(e.pointerId); el.classList.add('drag'); el.focus({preventScroll:true}); });
+      el.addEventListener('pointermove', e=>{ if(!drag || e.pointerId !== drag.id) return; const p = toPct(e);
+        let nx = clamp(p.x - drag.dx); const centred = (it.type === 'medal' || it.align === 'center') && Math.abs(nx - 50) < 1; if(centred) nx = 50;
+        guide.classList.toggle('on', centred); it.x = nx; it.y = clamp(p.y - drag.dy); upd(); });
+      const end = e=>{ if(!drag) return; drag = null; el.classList.remove('drag'); guide.classList.remove('on'); try{ el.releasePointerCapture(e.pointerId); }catch(x){} };
+      el.addEventListener('pointerup', end); el.addEventListener('pointercancel', end);
+      el.addEventListener('keydown', e=>{ const k = { ArrowLeft:[-1,0], ArrowRight:[1,0], ArrowUp:[0,-1], ArrowDown:[0,1] }[e.key]; if(!k) return;
+        e.preventDefault(); const s = e.shiftKey ? 2 : 0.2; it.x = clamp(it.x + k[0]*s); it.y = clamp(it.y + k[1]*s); upd(); });
+    });
+  }
+  function full(){ drawList(); drawProps(); draw(); }
+  modalContent.querySelectorAll('[data-rk]').forEach(b=> b.addEventListener('click', ()=>{ rk = +b.dataset.rk; modalContent.querySelectorAll('[data-rk]').forEach(x=> x.classList.toggle('on', x === b)); draw(); drawList(); }));
+  $('cd_add').addEventListener('click', ()=>{ const it = layoutItem($('cd_addType').value, { y:50 }); L.items.push(it); sel = it.id; full(); });
+  $('cd_reset').addEventListener('click', ()=>{ L.items = layoutDefaultItems(); sel = L.items[0].id; full(); });
+  $('cd_back').addEventListener('click', ()=> openAwardForm());
+  $('cd_save').addEventListener('click', async ()=>{
+    META.award = Object.assign({}, META.award || {}, { layout: { img:L.img, ar:L.ar, items:L.items.map(it=> Object.assign({}, it, { text: String(it.text ?? '') })) } });
+    render(); buildToolbar(); updateAkteBtn();
+    $('cd_status').textContent = 'Speichere für alle …';
+    await publishUpdate($('cd_status'));
+  });
+  full();
 }
 
 /* ---------- Erfolgs-Effekt (Konfetti & Nachricht) ---------- */
@@ -965,6 +1353,8 @@ function cleanHtml(){
   const root = document.documentElement.cloneNode(true);
   [...root.attributes].forEach(a=>{ if(a.name !== 'lang') root.removeAttribute(a.name); });
   root.querySelectorAll('script[src]').forEach(n=>n.remove());
+  root.querySelectorAll('link[data-certfonts], link[href*="family=Merriweather"]').forEach(n=>n.remove());
+  const md = root.querySelector('#modal'); if(md) md.className = 'modal';
   root.querySelectorAll('style').forEach(n=>{ if(n.id !== 'appStyle' && /swal2|chrome-extension/.test(n.textContent)) n.remove(); });
   const body = root.querySelector('body');
   if(body){
@@ -3757,11 +4147,11 @@ function openSettingsForm(){
   });
 }
 
-function closeOverlay(){ overlay.classList.remove('show'); document.body.style.overflow = ''; }
+function closeOverlay(){ overlay.classList.remove('show'); document.body.style.overflow = ''; modal.classList.remove('wide','certW'); }
 document.getElementById('closeBtn').addEventListener('click', closeOverlay);
 let mouseDownOnBackdrop = false;
 overlay.addEventListener('mousedown', (e)=>{ mouseDownOnBackdrop = (e.target === overlay); });
-overlay.addEventListener('click', (e)=>{ if(e.target === overlay && mouseDownOnBackdrop) overlay.classList.remove('show'); });
+overlay.addEventListener('click', (e)=>{ if(e.target === overlay && mouseDownOnBackdrop){ overlay.classList.remove('show'); modal.classList.remove('wide','certW'); } });
 document.addEventListener('keydown', e=>{
   if(e.key !== 'Escape') return;
   const full = document.querySelector('.wg.full, .sd.full, .pz.full, .mm.full, .df.full');
