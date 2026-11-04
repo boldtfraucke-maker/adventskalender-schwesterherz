@@ -30,6 +30,27 @@ header p{margin:8px 0 0; font-size:17px; text-shadow:0 1px 3px rgba(0,0,0,.35);}
 .toolbar button{ background:#2b2b2b; border:1px solid rgba(255,255,255,.25); color:#fff; padding:8px 14px; border-radius:20px; font-size:13px; cursor:pointer; font-weight:600; }
 .toolbar button.active{background:var(--accent2); color:#1a2e1f; border-color:var(--accent2);}
 .toolbar button.akte{background:var(--paper); color:var(--ink); border-color:var(--accent);}
+.userNav{display:contents;}
+.userNav .nshort{display:none;}
+.userNav .ni{margin-right:6px;}
+.userNav .nx{margin-left:6px; font-weight:normal; opacity:.8;}
+.userNav .nx::before{content:'('} .userNav .nx::after{content:')'}
+@media (max-width:700px){
+  /* Handy: Titel, darunter direkt die Türchen – die drei Funktionen als feste Leiste unten */
+  .toolbar{z-index:45;}
+  .userNav{display:flex; position:fixed; left:8px; right:8px; bottom:calc(8px + env(safe-area-inset-bottom,0px)); gap:4px; padding:5px; z-index:45;
+    background:var(--paper); border:1px solid var(--accent); border-radius:16px; box-shadow:0 4px 18px rgba(0,0,0,.35);}
+  .userNav:not(:has(button:not([hidden]))){display:none;}
+  .userNav button.akte{flex:1 1 0; min-width:0; display:flex; flex-direction:column; align-items:center; gap:1px; padding:6px 2px 5px; border:none; border-radius:11px;
+    background:transparent; color:var(--ink); font-size:11px; line-height:1.15; font-weight:600;}
+  .userNav button.akte:active{background:rgba(0,0,0,.08);}
+  .userNav .ni{margin:0; font-size:19px; line-height:1;}
+  .userNav .nl{display:flex; flex-direction:column; align-items:center; max-width:100%;}
+  .userNav .nlong{display:none;} .userNav .nshort{display:inline; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%;}
+  .userNav .nx{margin:0; font-size:10px;} .userNav .nx::before, .userNav .nx::after{content:''}
+  body:has(.userNav button:not([hidden])){padding-bottom:calc(84px + env(safe-area-inset-bottom,0px));}
+  body:has(.userNav button:not([hidden])) .awToast{bottom:calc(92px + env(safe-area-inset-bottom,0px));}
+}
 
 .grid{ display:grid; grid-template-columns:repeat(auto-fit, minmax(84px, 1fr)); gap:16px; max-width:420px; margin:12px auto 0; padding:0 14px 40px; position:relative; z-index:2; }
 @media(min-width:700px){ .grid{ max-width:920px; grid-template-columns:repeat(6, 1fr); gap:20px; } }
@@ -501,7 +522,6 @@ footer{text-align:center; color:var(--muted); font-size:12px; padding:10px 0 30p
 
 <div id="printArea"></div>
 
-<footer>Baukasten-Adventskalender</footer>
 
 <!-- BAUKASTEN-INHALTE — wird beim Speichern im Bearbeiten-Modus automatisch aktualisiert -->
 <script type="application/json" id="doorData">[{"day": 1, "type": "story", "image": "", "title": "1. Dezember", "text": "", "video": "", "images": [], "hints": []}, {"day": 2, "type": "story", "image": "", "title": "2. Dezember", "text": "", "video": "", "images": [], "hints": []}, {"day": 3, "type": "story", "image": "", "title": "3. Dezember", "text": "", "video": "", "images": [], "hints": []}, {"day": 4, "type": "story", "image": "", "title": "4. Dezember", "text": "", "video": "", "images": [], "hints": []}, {"day": 5, "type": "story", "image": "", "title": "5. Dezember", "text": "", "video": "", "images": [], "hints": []}, {"day": 6, "type": "story", "image": "", "title": "6. Dezember", "text": "", "video": "", "images": [], "hints": []}, {"day": 7, "type": "story", "image": "", "title": "7. Dezember", "text": "", "video": "", "images": [], "hints": []}, {"day": 8, "type": "story", "image": "", "title": "8. Dezember", "text": "", "video": "", "images": [], "hints": []}, {"day": 9, "type": "story", "image": "", "title": "9. Dezember", "text": "", "video": "", "images": [], "hints": []}, {"day": 10, "type": "story", "image": "", "title": "10. Dezember", "text": "", "video": "", "images": [], "hints": []}, {"day": 11, "type": "story", "image": "", "title": "11. Dezember", "text": "", "video": "", "images": [], "hints": []}, {"day": 12, "type": "story", "image": "", "title": "12. Dezember", "text": "", "video": "", "images": [], "hints": []}, {"day": 13, "type": "story", "image": "", "title": "13. Dezember", "text": "", "video": "", "images": [], "hints": []}, {"day": 14, "type": "story", "image": "", "title": "14. Dezember", "text": "", "video": "", "images": [], "hints": []}, {"day": 15, "type": "story", "image": "", "title": "15. Dezember", "text": "", "video": "", "images": [], "hints": []}, {"day": 16, "type": "story", "image": "", "title": "16. Dezember", "text": "", "video": "", "images": [], "hints": []}, {"day": 17, "type": "story", "image": "", "title": "17. Dezember", "text": "", "video": "", "images": [], "hints": []}, {"day": 18, "type": "story", "image": "", "title": "18. Dezember", "text": "", "video": "", "images": [], "hints": []}, {"day": 19, "type": "story", "image": "", "title": "19. Dezember", "text": "", "video": "", "images": [], "hints": []}, {"day": 20, "type": "story", "image": "", "title": "20. Dezember", "text": "", "video": "", "images": [], "hints": []}, {"day": 21, "type": "story", "image": "", "title": "21. Dezember", "text": "", "video": "", "images": [], "hints": []}, {"day": 22, "type": "story", "image": "", "title": "22. Dezember", "text": "", "video": "", "images": [], "hints": []}, {"day": 23, "type": "story", "image": "", "title": "23. Dezember", "text": "", "video": "", "images": [], "hints": []}, {"day": 24, "type": "story", "image": "", "title": "24. Dezember – Heiligabend 🎁", "text": "", "video": "", "images": [], "hints": []}]</script>
@@ -859,8 +879,8 @@ function updateAwardBtn(){
   const a = AW(); btn.hidden = !a.on;
   if(!a.on) return;
   const st = awardStats();
-  btn.textContent = a.progressOn ? `🏅 Ermittlung (${st.solved}/${st.total})` : '🏅 Auszeichnung';
-  if(awardUnlocked(a)) btn.textContent += ' ✨';
+  const extra = (a.progressOn ? `${st.solved}/${st.total}` : '') + (awardUnlocked(a) ? ' ✨' : '');
+  btn.innerHTML = a.progressOn ? navLabel('🏅', 'Ermittlung', 'Ermittlung', extra.trim()) : navLabel('🏅', 'Auszeichnung', 'Auszeichnung', extra.trim());
 }
 function openAwardPanel(){
   const a = AW(), st = awardStats(), unl = awardUnlocked(a);
@@ -1287,6 +1307,10 @@ function celebrate(d, kind){
 }
 
 /* ---------- Werkzeugleiste ---------- */
+/* Knopf-Beschriftung: am PC lang, am Handy (Leiste unten) kurz mit Symbol darüber */
+function navLabel(icon, long, short, extra){
+  return `<span class="ni">${icon}</span><span class="nl"><span class="nlong">${esc(long)}</span><span class="nshort">${esc(short)}</span>${extra ? `<span class="nx">${esc(extra)}</span>` : ''}</span>`;
+}
 function buildToolbar(){
   const hasClues = DOORS.some(d=>(d.clue||'').trim());
   toolbar.innerHTML = (canEdit ? `
@@ -1298,9 +1322,11 @@ function buildToolbar(){
     <button type="button" id="resetBtn">↺ Test zurücksetzen</button>`
     + (OFFLINE ? `<button type="button" id="fileSaveBtn" class="akte">📤 Kalender-Datei speichern</button><button type="button" id="fileLoadBtn">📥 Kalender-Datei laden</button>
     <p class="offNote"><span>💾 Deine Änderungen werden auf diesem Computer gespeichert. Wenn du fertig bist: „📤 Kalender-Datei speichern“ und die Datei deiner Schwester schicken.</span></p>` : '') : '')
-    + (hasClues || canEdit ? `<button type="button" id="akteBtn" class="akte">📁 Ermittlungsakte</button>` : '')
-    + `<button type="button" id="bwBtn" class="akte" hidden>🔠 Lösungswort</button>`
-    + `<button type="button" id="awBtn" class="akte" hidden>🏅 Auszeichnung</button>`;
+    + `<div class="userNav" id="userNav">`
+    + (hasClues || canEdit ? `<button type="button" id="akteBtn" class="akte">${navLabel('📁','Ermittlungsakte','Akte')}</button>` : '')
+    + `<button type="button" id="bwBtn" class="akte" hidden>${navLabel('🔠','Lösungswort','Lösungswort')}</button>`
+    + `<button type="button" id="awBtn" class="akte" hidden>${navLabel('🏅','Auszeichnung','Auszeichnung')}</button>`
+    + `</div>`;
   document.getElementById('awBtn').addEventListener('click', openAwardPanel);
   document.getElementById('bwBtn').addEventListener('click', openBigWord);
   const akte = document.getElementById('akteBtn');
@@ -1339,13 +1365,13 @@ function buildToolbar(){
 function updateAkteBtn(){
   try{ updateAwardBtn(); checkBadges(); }catch(e){}
   const b = document.getElementById('akteBtn');
-  if(!b){ const w = document.getElementById('bwBtn'); if(w){ w.hidden = !bwActive(); if(bwActive()) w.textContent = `🔠 Lösungswort (${bwCount()}/${bwLetters().length})`; } return; }
+  if(!b){ const w = document.getElementById('bwBtn'); if(w){ w.hidden = !bwActive(); if(bwActive()) w.innerHTML = navLabel('🔠', 'Lösungswort', 'Lösungswort', `${bwCount()}/${bwLetters().length}`); } return; }
   const hasClues = DOORS.some(d=>(d.clue||'').trim());
   b.hidden = !hasClues;
   const n = DOORS.filter(clueUnlocked).length;
-  b.textContent = '📁 Ermittlungsakte' + (n ? ` (${n})` : '');
+  b.innerHTML = navLabel('📁', 'Ermittlungsakte', 'Akte', n ? String(n) : '');
   const w = document.getElementById('bwBtn');
-  if(w){ w.hidden = !bwActive(); if(bwActive()) w.textContent = `🔠 Lösungswort (${bwCount()}/${bwLetters().length})` + (lsList(bwKey).includes(1) ? ' ✓' : ''); }
+  if(w){ w.hidden = !bwActive(); if(bwActive()) w.innerHTML = navLabel('🔠', 'Lösungswort', 'Lösungswort', `${bwCount()}/${bwLetters().length}` + (lsList(bwKey).includes(1) ? ' ✓' : '')); }
 }
 
 /* ---------- Speichern (nur im Werkstatt-Link) ---------- */
