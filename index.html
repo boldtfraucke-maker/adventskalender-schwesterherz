@@ -61,8 +61,9 @@ header p{margin:8px 0 0; font-size:17px; text-shadow:0 1px 3px rgba(0,0,0,.35);}
 .door.opened{ z-index:3; }
 .door.opened .doorPanel{ transform:rotateY(-32deg) translateZ(4px); box-shadow:10px 6px 20px rgba(0,0,0,.35); }
 .door.placeholder .doorPanel{ background-image:none !important; background:linear-gradient(135deg,#ffdca8,#ffb56b); }
-.plaque{ position:absolute; top:6px; left:6px; width:32px; height:32px; border-radius:50%; background:#fff; color:#a8521f; display:flex; align-items:center; justify-content:center; font-weight:bold; font-size:15px; box-shadow:0 1px 5px rgba(0,0,0,.45); border:2px solid #e8b95c; font-family:Georgia,serif; z-index:5; pointer-events:none; }
-.plaque.faint{ opacity:.45; transform:scale(.8); transform-origin:top left; }
+.plaque{ position:absolute; bottom:6px; left:6px; width:28px; height:28px; border-radius:50%; background:#fff; color:#a8521f; display:flex; align-items:center; justify-content:center; font-weight:bold; font-size:13px; box-shadow:0 1px 5px rgba(0,0,0,.45); border:2px solid #e8b95c; font-family:Georgia,serif; z-index:5; pointer-events:none; }
+@media(max-width:699px){ .plaque{ bottom:7px; left:7px; width:20px; height:20px; font-size:10px; border-width:1.5px; box-shadow:0 1px 3px rgba(0,0,0,.4); } .solvedBadge{ bottom:7px; right:7px; width:18px; height:18px; font-size:11px; } }
+.plaque.faint{ opacity:.45; transform:scale(.8); transform-origin:bottom left; }
 .lvlBadge{ position:absolute; bottom:6px; left:6px; padding:1px 6px; border-radius:10px; background:rgba(255,255,255,.92); color:#c8963e; font-size:11px; letter-spacing:1px; z-index:5; box-shadow:0 1px 4px rgba(0,0,0,.35); pointer-events:none; }
 .lvlLine{ margin:-4px 0 10px; color:#c8963e; font-size:14px; letter-spacing:1px; }
 .lvlLine span{ color:var(--soft); letter-spacing:0; font-size:13px; }
@@ -584,7 +585,7 @@ const isSolved = day => lsList(solvedKey).includes(day);
 const isRevealed = day => lsList(revealedKey).includes(day);
 const hasPuzzle = d => doorType(d) !== 'story' || !!((d.answer||'').trim() || (d.solution||'').trim());
 function clueUnlocked(d){
-  if(!(d.clue||'').trim()) return false;
+  if(!akteOn() || !(d.clue||'').trim()) return false;
   if(!isUnlocked(d.day)) return false;
   if(hasPuzzle(d)) return isSolved(d.day) || isRevealed(d.day);
   return getOpened().includes(d.day);
@@ -618,7 +619,10 @@ const LEVELS = ['', '★☆☆', '★★☆', '★★★'];
 const LEVEL_NAMES = ['', 'leicht', 'mittel', 'schwer'];
 function bwChars(){ return [...String(META.bigWord||'').toUpperCase()]; }
 function bwLetters(){ return bwChars().filter(c=>c.trim()); }
-function bwActive(){ const L = bwLetters(); return L.length > 0 && Array.isArray(META.bigDays) && META.bigDays.length === L.length; }
+function bwDefined(){ const L = bwLetters(); return L.length > 0 && Array.isArray(META.bigDays) && META.bigDays.length === L.length; }
+/* abschaltbar in den Einstellungen („Was sehen die Empfänger?“) – das Wort bleibt gespeichert */
+function bwActive(){ return !META.bwOff && bwDefined(); }
+function akteOn(){ return !META.akteOff; }
 function bwMakeDays(word, mode){
   const n = [...String(word).toUpperCase()].filter(c=>c.trim()).length;
   const days = [...Array(24)].map((_,i)=>i+1);
@@ -1337,7 +1341,7 @@ function buildToolbar(){
   document.getElementById('awBtn').addEventListener('click', openAwardPanel);
   document.getElementById('bwBtn').addEventListener('click', openBigWord);
   const akte = document.getElementById('akteBtn');
-  if(akte){ akte.hidden = !hasClues; akte.addEventListener('click', openAkte); }
+  if(akte){ akte.hidden = !hasClues || !akteOn(); akte.addEventListener('click', openAkte); }
   if(!canEdit) return;
   document.getElementById('fileSaveBtn')?.addEventListener('click', downloadCalendarFile);
   document.getElementById('fileLoadBtn')?.addEventListener('click', openFileDialog);
@@ -1374,7 +1378,7 @@ function updateAkteBtn(){
   const b = document.getElementById('akteBtn');
   if(!b){ const w = document.getElementById('bwBtn'); if(w){ w.hidden = !bwActive(); if(bwActive()) w.innerHTML = navLabel('🔠', 'Lösungswort', 'Lösungswort', `${bwCount()}/${bwLetters().length}`); } return; }
   const hasClues = DOORS.some(d=>(d.clue||'').trim());
-  b.hidden = !hasClues;
+  b.hidden = !hasClues || !akteOn();
   const n = DOORS.filter(clueUnlocked).length;
   b.innerHTML = navLabel('📁', 'Ermittlungsakte', 'Akte', n ? String(n) : '');
   const w = document.getElementById('bwBtn');
@@ -4267,6 +4271,11 @@ function openSettingsForm(){
       <label for="m_theme">Design-Vorlage</label>
       <select id="m_theme">${Object.entries(THEMES).map(([k,t])=>`<option value="${k}"${(META.theme||'klassisch')===k?' selected':''}>${t.name}</option>`).join('')}</select>
       <p class="hint">ⓘ Setzt Hintergrund und Farben. Die Farben oben kannst du danach noch anpassen. Ein Hintergrundbild liegt über der Vorlage.</p>
+      <h3 class="formSec">👁 Was sehen die Empfänger?</h3>
+      <p class="hint">ⓘ Nimm das Häkchen weg, wenn du eine Funktion in diesem Kalender nicht brauchst. Deine Einträge (Hinweise, Lösungswort, Urkunde) bleiben gespeichert und sind wieder da, sobald du das Häkchen setzt.</p>
+      <label class="check"><input type="checkbox" id="m_showAkte" ${META.akteOff ? '' : 'checked'}> 📁 Ermittlungsakte (Hinweise aus den Türchen sammeln)</label>
+      <label class="check"><input type="checkbox" id="m_showBw" ${META.bwOff ? '' : 'checked'}> 🔠 Großes Lösungswort (Buchstaben aus den Türchen)</label>
+      <label class="check"><input type="checkbox" id="m_showAw" ${AW().on ? 'checked' : ''}> 🏅 Auszeichnung mit Punkten und Urkunde</label>
       <label for="m_bigWord" style="margin-top:14px">🔠 Großes Lösungswort (optional, höchstens 24 Buchstaben)</label>
       <input type="text" id="m_bigWord" value="${esc(META.bigWord||'')}" placeholder="z. B. DER GAERTNER">
       <label for="m_bigQuestion">Frage dazu (optional)</label>
@@ -4274,7 +4283,7 @@ function openSettingsForm(){
       <label for="m_bigMode">Buchstaben verteilen</label>
       <select id="m_bigMode"><option value="rand">zufällig auf die Türchen</option><option value="order">der Reihe nach (Tag 1 = 1. Buchstabe)</option></select>
       <p class="hint">ⓘ Leer lassen = kein großes Lösungswort. Leerzeichen sind erlaubt. Ä, Ö, Ü bitte als AE, OE, UE schreiben. Den Buchstaben bekommt man, wenn das Türchen gelöst ist (bei Geschichten ohne Rätsel: beim Öffnen).</p>
-      ${bwActive() ? `<p class="hint">Aktuelle Verteilung: ${bwLetters().map((c,i)=>`${c}=Tag ${META.bigDays[i]}`).join(', ')}</p><label><input type="checkbox" id="m_bigNew"> Buchstaben neu verteilen</label>` : ''}
+      ${bwDefined() ? `<p class="hint">Aktuelle Verteilung: ${bwLetters().map((c,i)=>`${c}=Tag ${META.bigDays[i]}`).join(', ')}</p><label><input type="checkbox" id="m_bigNew"> Buchstaben neu verteilen</label>` : ''}
       <h3 class="formSec">🎉 Erfolgs-Effekt</h3>
       <label for="m_celMode">Wann gibt es Konfetti und eine Nachricht?</label>
       <select id="m_celMode"><option value="all">bei jedem gelösten Rätsel</option><option value="puzzle">nur beim Bild-Puzzle</option><option value="off">aus</option></select>
@@ -4380,11 +4389,14 @@ function openSettingsForm(){
     if(nL > 24){ st0.textContent = `Das Lösungswort hat ${nL} Buchstaben. Höchstens 24 gehen (eins pro Türchen).`; return; }
     const mode = document.getElementById('m_bigMode').value;
     const renew = document.getElementById('m_bigNew')?.checked;
-    if(bw !== (META.bigWord||'') || mode !== (META.bigMode||'rand') || renew || !bwActive()){
+    if(bw !== (META.bigWord||'') || mode !== (META.bigMode||'rand') || renew || !bwDefined()){
       META.bigDays = bw ? bwMakeDays(bw, mode) : [];
       try{ localStorage.removeItem(bwKey); }catch(e){}
     }
     META.bigWord = bw; META.bigMode = mode;
+    META.akteOff = !document.getElementById('m_showAkte').checked;
+    META.bwOff = !document.getElementById('m_showBw').checked;
+    META.award = Object.assign({}, META.award || {}, { on: document.getElementById('m_showAw').checked });
     META.bigQuestion = document.getElementById('m_bigQuestion').value.trim();
     META.cel = celVals();
     const tb = typeBoxes();
