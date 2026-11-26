@@ -104,6 +104,9 @@ header p{margin:8px 0 0; font-size:17px; text-shadow:0 1px 3px rgba(0,0,0,.35);}
 .wgTools{display:flex; flex-wrap:wrap; gap:6px; margin-bottom:8px;}
 .wgTools .pill{padding:6px 12px; font-size:13px;}
 .wgTools .zoomBtn{margin-left:auto; background:var(--bg2); border-color:var(--bg2); color:#fff; font-weight:bold;}
+/* zoomCenter: im Vollbild steht der Knopf mittig direkt über dem Rätsel */
+.full .wgTools{justify-content:center; align-items:center;}
+.full .wgTools .zoomBtn{margin-left:0; padding:8px 18px; font-size:15px;}
 .wgTools .pill.on{background:var(--accent2); border-color:var(--accent2); color:#1a2e1f; font-weight:bold;}
 .wgBoard{position:relative; width:100%; max-width:100%; aspect-ratio:1/1; margin:0 auto; touch-action:none; user-select:none; -webkit-user-select:none; background:#fff; border:2px solid #8a7a5a; border-radius:6px; overflow:hidden; cursor:crosshair;}
 .wgCells{position:absolute; inset:0; display:grid;}
@@ -147,6 +150,8 @@ header p{margin:8px 0 0; font-size:17px; text-shadow:0 1px 3px rgba(0,0,0,.35);}
 .sd.full{position:fixed; inset:0; z-index:70; background:var(--card); margin:0; padding:calc(10px + env(safe-area-inset-top,0px)) 10px calc(10px + env(safe-area-inset-bottom,0px)); display:flex; flex-direction:column;}
 .sd.full .sdScroll{flex:1; min-height:0; overflow:auto; -webkit-overflow-scrolling:touch;}
 .sd.full .sdBoard{max-width:none; margin:0 auto;}
+.sd.full:not(.sam){justify-content:center;} .sd.full:not(.sam) .sdScroll{flex:0 0 auto;}
+.sd.full:not(.sam) .sdBoard{width:min(100%, calc(100vh - 190px)); width:min(100%, calc(100dvh - 190px));}
 .sd.full .sdPad{grid-template-columns:repeat(auto-fit,minmax(36px,1fr)); margin-top:6px;}
 .sd.full .sdPad button{height:40px;}
 .sd.full .wgMsg{margin:4px 0 0 !important;}
@@ -615,8 +620,13 @@ function applyTheme(){
 /* ---------- Text in Absätze umwandeln ---------- */
 function fmtText(t){
   const inline = x => x.replace(/\*\*([^*\n]+)\*\*/g,'<b>$1</b>').replace(/(^|[^*])\*([^*\n]+)\*(?!\*)/g,'$1<i>$2</i>');
-  return String(t||'').replace(/\r/g,'').split(/\n+/).map(x=>x.trim()).filter(Boolean)
-    .map(x=>`<p class="tx">${inline(x)}</p>`).join('');
+  /* poemBlock: Absätze durch Leerzeilen. Besteht ein Absatz nur aus kurzen Zeilen (Gedicht), bleiben die Zeilen eng zusammen. */
+  return String(t||'').replace(/\r/g,'').split(/\n\s*\n/).map(block=>{
+    const lines = block.split('\n').map(x=>x.trim()).filter(Boolean);
+    if(!lines.length) return '';
+    const poem = lines.length > 1 && lines.every(l=> l.length <= 70 && !/^@@BILD\d+@@$/.test(l));
+    return poem ? `<p class="tx">${lines.map(inline).join('<br>')}</p>` : lines.map(x=>`<p class="tx">${inline(x)}</p>`).join('');
+  }).join('');
 }
 
 /* ---------- Großes Lösungswort ---------- */
@@ -1895,7 +1905,7 @@ function mountSudoku(el, d, onProgress){
   const fixed = i => given[i] || tips.includes(i);
   const tipsLeft = ()=> tipsMax < 0 ? Infinity : Math.max(0, tipsMax - tips.length);
   el.innerHTML = `<div class="sd${S.kind==='samurai'?' sam':''}">
-    ${big ? '<div class="wgTools"><button type="button" class="pill zoomBtn" data-act="full">🔍 Vergrößern</button></div>' : ''}
+    <div class="wgTools"><button type="button" class="pill zoomBtn" data-act="full">🔍 Vergrößern</button></div>
     <div class="sdScroll"><div class="sdBoard" style="grid-template-columns:repeat(${W},1fr); grid-template-rows:repeat(${G.H},1fr); --sdW:${W}"></div></div>
     <div class="sdPad"></div>
     <div class="wgTools" style="margin-top:8px">
@@ -2345,15 +2355,18 @@ function mountCloze(el, d, onSolved){
   const gaps = parts.filter(p=>p.gap);
   const key = 'advent_cz_' + YEAR + '_' + d.day;
   let st = lsGetJSON(key, {v:[], done:false});
-  let gi = 0;
+  let gi = 0, czBold = false;
+  const czFmt = t=> t.split('**').map((x,k)=>{ if(k>0) czBold = !czBold; return k>0 ? (czBold?'<b>':'</b>')+esc(x) : esc(x); }).join('');
   const html = parts.map(p=>{
-    if(!p.gap) return esc(p.t);
+    if(!p.gap){ const pre = czBold ? '<b>' : ''; const out = pre + czFmt(p.t); return czBold ? out + '</b>' : out; }
     const i = gi++, len = Math.max(...p.gap.map(g=>g.length));
     return `<input type="text" class="czGap" data-g="${i}" style="width:${Math.max(3, len+1)}ch" autocomplete="off" spellcheck="false" aria-label="Lücke ${i+1}">`;
   }).join('');
   const bank = Z.bank ? shuffleArr(gaps.map(g=>g.gap[0])) : [];
+  const bankHidden = bank.length && Z.bankBtn && !st.showBank;
   el.innerHTML = `<div class="cz">
-    ${bank.length ? `<div class="czBank"><span>Diese Wörter fehlen:</span> ${bank.map(w=>`<b>${esc(w)}</b>`).join(' ')}</div>` : ''}
+    ${bank.length ? `<div class="czBank" ${bankHidden?'hidden':''}><span>Diese Wörter fehlen:</span> ${bank.map(w=>`<b>${esc(w)}</b>`).join(' ')}</div>` : ''}
+    ${bankHidden ? `<div class="actions czBankBtnRow"><button type="button" class="pill" data-act="bank">💡 Fehlende Wörter anzeigen</button></div>` : ''}
     <div class="czText">${html}</div>
     <div class="actions"><button type="button" class="pill primary" data-act="check">✔ Prüfen</button></div>
     <p class="wgMsg"></p></div>`;
@@ -2370,6 +2383,8 @@ function mountCloze(el, d, onSolved){
     else if(!silent) msg.textContent = `${ok} von ${gaps.length} Lücken richtig. Die roten nochmal ansehen.`;
   };
   el.querySelector('[data-act="check"]').addEventListener('click', ()=> check(false));
+  const bankBtn = el.querySelector('[data-act="bank"]');
+  if(bankBtn) bankBtn.addEventListener('click', ()=>{ el.querySelector('.czBank').hidden = false; bankBtn.parentNode.remove(); st.showBank = true; lsSetJSON(key, st); });
   msg.textContent = 'Fülle die Lücken aus und drücke dann auf „Prüfen“.';
   if(st.done) check(true);
 }
@@ -3167,7 +3182,7 @@ function printDoor(d){
   if(type === 'lettersudoku' && d.sudoku) body += `<div class="pSd">${sudokuTableHtml(d.sudoku, true, d.sdNums !== false)}</div>`;
   if(type === 'anagram') body += (d.anagram||[]).map((x,i)=>`<p>${i+1}. <b style="letter-spacing:4px">${esc(x.s)}</b>${x.hint?` (${esc(x.hint)})`:''} → ____________</p>`).join('');
   if(type === 'hangman' && d.hangman) body += `<p style="font-size:22px; letter-spacing:6px">${upDE(d.hangman.word).replace(/[A-ZÄÖÜß]/g,'_')}</p>${d.hangman.hint?`<p>Hinweis: ${esc(d.hangman.hint)}</p>`:''}`;
-  if(type === 'cloze' && d.cloze){ const ps = clozeParts(d.cloze.text); body += `<p>${ps.map(x=> x.gap ? '_'.repeat(Math.max(8, x.gap[0].length+4)) : esc(x.t)).join('')}</p>` + (d.cloze.bank ? `<p>Wörter: ${shuffleArr(ps.filter(x=>x.gap).map(x=>x.gap[0])).map(esc).join(', ')}</p>` : ''); }
+  if(type === 'cloze' && d.cloze){ const ps = clozeParts(d.cloze.text); body += `<p>${ps.map(x=> x.gap ? '_'.repeat(Math.max(8, x.gap[0].length+4)) : esc(x.t.replace(/\*\*/g,''))).join('')}</p>` + (d.cloze.bank ? `<p>Wörter: ${shuffleArr(ps.filter(x=>x.gap).map(x=>x.gap[0])).map(esc).join(', ')}</p>` : ''); }
   if(type === 'whoami') body += `<ol>${(d.whoami||[]).map(c=>`<li>${esc(c)}</li>`).join('')}</ol>`;
   if(type === 'match' && d.match){ const R2 = shuffleArr(d.match.map(p=>p[1])); body += `<table style="border-collapse:collapse">${d.match.map((p,i)=>`<tr><td style="padding:6px 30px 6px 0">${i+1}. ${esc(p[0])}</td><td style="padding:6px 0">${String.fromCharCode(65+i)}) ${esc(R2[i])}</td></tr>`).join('')}</table>`; }
   if(type === 'lock' && d.lock) body += `<p style="font-size:22px">🔒 Code: ${'☐ '.repeat(String(d.lock.code).length)}</p>`;
@@ -3465,6 +3480,8 @@ function openEditForm(idx){
         <label for="cz_text">Text mit Lücken: das fehlende Wort in [eckige Klammern] setzen</label>
         <textarea id="cz_text" style="min-height:120px" placeholder="Der Inspektor betrat das [Arbeitszimmer]. Auf dem Schreibtisch lag ein [Brief] mit einem roten [Siegel].">${esc(d.cloze?.text||'')}</textarea>
         <label class="check"><input type="checkbox" id="cz_bank" ${d.cloze?.bank===false?'':'checked'}> Fehlende Wörter als Liste zur Auswahl zeigen (leichter)</label>
+        <label class="check"><input type="checkbox" id="cz_bankBtn" ${d.cloze?.bankBtn?'checked':''}> Liste erst zeigen, wenn auf „Fehlende Wörter anzeigen“ getippt wird</label>
+        <p class="hint">Tipp: Wörter zwischen zwei Sternchen-Paaren werden **fett** angezeigt.</p>
         <p class="hint">ⓘ Mehrere erlaubte Schreibweisen mit | trennen, z. B. [Brief|Briefumschlag].</p>
       </div>
       <div class="fsec" data-f="wa">
@@ -4042,7 +4059,7 @@ function openEditForm(idx){
       obj.anagram = L.map(x=>({ w:x.w, s: old[x.w] || scrambleWord(x.w), hint:x.hint }));
     }
     if(t === 'hangman'){ const w = v('hm_word').trim(); if(!w){ st.textContent = 'Bitte ein Wort eintragen.'; return; } obj.hangman = { word:w, hint:v('hm_hint').trim(), lives:+v('hm_lives') }; }
-    if(t === 'cloze'){ const tx = v('cz_text'); if(!/\[[^\]]+\]/.test(tx)){ st.textContent = 'Bitte mindestens eine Lücke in [eckigen Klammern] markieren.'; return; } obj.cloze = { text:tx, bank:$('cz_bank').checked }; }
+    if(t === 'cloze'){ const tx = v('cz_text'); if(!/\[[^\]]+\]/.test(tx)){ st.textContent = 'Bitte mindestens eine Lücke in [eckigen Klammern] markieren.'; return; } obj.cloze = { text:tx, bank:$('cz_bank').checked, bankBtn:$('cz_bankBtn').checked }; }
     if(t === 'whoami'){ const L = v('wa_clues').split('\n').map(s=>s.trim()).filter(Boolean); if(L.length < 2){ st.textContent = 'Bitte mindestens zwei Hinweise eintragen.'; return; } if(!v('f_answer').trim()){ st.textContent = 'Bitte die richtige Antwort eintragen.'; return; } obj.whoami = L; }
     if(t === 'match'){ const L = v('mt_pairs').split('\n').map(l=>l.split(/\s*=\s*/)).filter(p=>p.length >= 2 && p[0].trim() && p[1].trim()).map(p=>[p[0].trim(), p.slice(1).join(' = ').trim()]); if(L.length < 2){ st.textContent = 'Bitte mindestens zwei Paare im Format Links = Rechts eintragen.'; return; } obj.match = L; }
     if(t === 'lock'){ const c = v('lk_code').replace(/\D/g,''); if(c.length < 3 || c.length > 6){ st.textContent = 'Der Code muss 3 bis 6 Ziffern haben.'; return; } obj.lock = { code:c, tries:+v('lk_tries'), wait:+v('lk_wait') }; }
